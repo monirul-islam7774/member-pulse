@@ -1,6 +1,27 @@
-@MemberPulse.Api_HostAddress = http://localhost:5091
+@baseUrl = http://localhost:5080
 
-GET {{MemberPulse.Api_HostAddress}}/weatherforecast/
-Accept: application/json
+GET {{baseUrl}}/health
 
 ###
+GET {{baseUrl}}/api/members?page=1&pageSize=20
+
+###
+# @name create
+POST {{baseUrl}}/api/members
+Content-Type: application/json
+
+{
+  "firstName": "Aisha",
+  "lastName": "Rahman",
+  "email": "aisha.rahman@example.com",
+  "dateOfBirth": "1997-06-21"
+}
+
+###
+POST {{baseUrl}}/api/members/{{create.response.body.$.id}}/accounts
+Content-Type: application/json
+
+{
+  "type": "Savings",
+  "initialDeposit": 5000
+}
