@@ -116,7 +116,7 @@ public class EndToEndTests : IClassFixture<RealInfrastructureFactory>
 
         // 3. The KPI report reflects it, and nothing was sent twice (cooldown + idempotency).
         var report = await client.GetFromJsonAsync<CampaignDetailReportDto>($"/api/reports/campaigns/{campaign.Id}", Json);
-        Assert.Equal(new KpiDto(Sent: 1, Failed: 0, Converted: 1, ConversionRate: 1m, MembersReached: 1, ConvertedAmount: 640.25m),
+        Assert.Equal(new KpiDto(Sent: 1, Failed: 0, Pending: 0, Converted: 1, ConversionRate: 1m, MembersReached: 1, ConvertedAmount: 640.25m),
             report!.Campaign.Kpis);
     }
 

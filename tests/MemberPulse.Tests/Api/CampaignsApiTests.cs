@@ -75,7 +75,7 @@ public class CampaignsApiTests(MemberPulseApiFactory factory) : IClassFixture<Me
     private async Task<int> RunEngineAsync(Guid accountId, int times = 1)
     {
         using var scope = factory.Services.CreateScope();
-        await scope.ServiceProvider.GetRequiredService<OutboxProcessor>().ProcessBatchAsync(100, CancellationToken.None);
+        await scope.ServiceProvider.GetRequiredService<OutboxProcessor>().ProcessBatchAsync(100, 20, CancellationToken.None);
 
         var recorder = factory.Services.GetRequiredService<RecordingEventPublisher>();
         var events = recorder.Published

@@ -4,6 +4,7 @@ using MemberPulse.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
+using System.Threading.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -13,6 +14,7 @@ namespace MemberPulse.Api.Auth;
 public static class AuthSetup
 {
     public const string AdminPolicy = "Admin";
+    public const string LoginRateLimitPolicy = "login";
 
     public static IServiceCollection AddJwtAuth(this IServiceCollection services)
     {
@@ -20,6 +22,28 @@ public static class AuthSetup
             .BindConfiguration(JwtOptions.SectionName)
             .ValidateDataAnnotations()
             .ValidateOnStart();
+
+        services.AddOptions<SecurityOptions>().BindConfiguration(SecurityOptions.SectionName);
+
+        // Slows password guessing: login attempts are limited per client IP. (Behind a reverse proxy, make sure the
+        // real client address reaches the app, e.g. with forwarded-headers middleware, or everyone shares one limit.)
+        services.AddRateLimiter(limiter =>
+        {
+            limiter.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+            limiter.OnRejected = (context, _) =>
+            {
+                context.HttpContext.Response.Headers.RetryAfter = "60";
+                return ValueTask.CompletedTask;
+            };
+            limiter.AddPolicy(LoginRateLimitPolicy, httpContext => RateLimitPartition.GetFixedWindowLimiter(
+                httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = httpContext.RequestServices.GetRequiredService<IOptions<SecurityOptions>>().Value.LoginPermitsPerMinute,
+                    Window = TimeSpan.FromMinutes(1),
+                    QueueLimit = 0,
+                }));
+        });
 
         services.AddSingleton<TokenService>();
         services.AddSingleton<IPasswordHasher<StaffUser>, PasswordHasher<StaffUser>>();

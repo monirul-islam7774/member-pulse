@@ -65,7 +65,13 @@ Staff users have the role `Staff` or `Admin`; only admins can create users.
   Development uses a throwaway key from `appsettings.Development.json`; the app refuses to start without one.
 - **First admin:** if `Seed:AdminEmail` and `Seed:AdminPassword` are set and no staff exist, that admin
   is created at startup. Development seeds `admin@memberpulse.local` / `Admin_Dev123!`.
-- Passwords are hashed with ASP.NET Core's `PasswordHasher`. There is no lockout or rate limiting yet.
+- Passwords are hashed with ASP.NET Core's `PasswordHasher`.
+- **Lockout:** 5 wrong passwords in a row lock the account for 15 minutes. While locked, even the right password
+  is refused, with the same `401` as any other failure so nothing is revealed. Admins can clear it early with
+  `POST /api/users/unlock {"email": ...}`.
+- **Rate limit:** `POST /api/auth/login` allows `Security:LoginPermitsPerMinute` (default 10) per client IP, then
+  answers `429` with `Retry-After`. Behind a reverse proxy, forward the real client IP (e.g. forwarded-headers
+  middleware) or all users share one limit.
 
 ### Events (Kafka)
 
@@ -77,7 +83,12 @@ event on the `memberpulse.transactions` topic, keyed by account id so each accou
 - Delivery is **at-least-once**: consumers should de-duplicate on `transactionId`.
 - Set `Kafka:BootstrapServers` (Development uses `localhost:9092`, started by `docker compose up -d`).
   If it is empty, events are handed straight to the trigger engine in-process, so campaigns still work.
-- A message that keeps failing blocks the ones behind it (check `OutboxMessages.LastError`).
+- **Failures back off, they don't block.** A failed publish is retried after 2s, 4s, 8s ... up to 5 minutes. Events for
+  the same account never overtake a failing one, but other accounts carry on.
+- After `Kafka:MaxPublishAttempts` (default 20, roughly an hour of outage) a message is **dead-lettered** so it stops
+  holding up its account. Admins can list them with `GET /api/admin/outbox/dead` and give one a fresh run with
+  `POST /api/admin/outbox/{id}/retry`. A revived event arrives after any newer ones for that account.
+- Published rows are deleted after `Kafka:ProcessedRetentionDays` (default 7). Dead letters are kept.
 
 ### Campaigns and the trigger engine
 
@@ -92,7 +103,12 @@ in the campaign's segment *at that moment*, then records a delivery and sends th
 - Each transaction triggers a given campaign at most once, so replayed Kafka events are harmless.
 - With Kafka configured a consumer (group `memberpulse-triggers`) feeds the engine; otherwise the in-process publisher does.
 - Messages go through `IMessageSender`. The default only **logs** them; plug in an email/SMS/push provider there.
-- A failed send is recorded as `Failed` and is not retried automatically.
+- **Failed sends are retried.** A failed send stays `Pending` and is retried after 30s, 2m, 8m and 32m. After 5 attempts
+  it becomes `Failed` for good. `attempts` and `error` are shown on each delivery. A background worker does this every
+  `Campaigns:RetryPollSeconds` (default 30).
+- A send that was lost mid-flight (the process died) is picked up again after 5 minutes. In that rare case a message
+  can be sent twice, so the sender should tolerate duplicates.
+- Reports count `pending` messages separately, and a message can only convert once it has actually been `Sent`.
 
 ### Conversions and KPIs
 

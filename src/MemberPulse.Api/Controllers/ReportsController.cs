@@ -31,6 +31,7 @@ public sealed class ReportsController(MemberPulseDbContext db, TimeProvider time
                 CampaignId = g.Key,
                 Sent = g.Count(d => d.Status == DeliveryStatus.Sent),
                 Failed = g.Count(d => d.Status == DeliveryStatus.Failed),
+                Pending = g.Count(d => d.Status == DeliveryStatus.Pending),
                 Converted = g.Count(d => d.ConvertedAt != null),
                 Amount = g.Sum(d => d.ConversionAmount) ?? 0m,
             })
@@ -51,12 +52,12 @@ public sealed class ReportsController(MemberPulseDbContext db, TimeProvider time
             .Select(c => new CampaignKpiDto(
                 c.CampaignId,
                 names.GetValueOrDefault(c.CampaignId, "(deleted)"),
-                Kpi(c.Sent, c.Failed, c.Converted, reachedByCampaign.GetValueOrDefault(c.CampaignId), c.Amount)))
+                Kpi(c.Sent, c.Failed, c.Pending, c.Converted, reachedByCampaign.GetValueOrDefault(c.CampaignId), c.Amount)))
             .OrderByDescending(c => c.Kpis.Sent).ThenBy(c => c.Name)
             .ToList();
 
         var totals = Kpi(
-            counts.Sum(c => c.Sent), counts.Sum(c => c.Failed), counts.Sum(c => c.Converted),
+            counts.Sum(c => c.Sent), counts.Sum(c => c.Failed), counts.Sum(c => c.Pending), counts.Sum(c => c.Converted),
             reached.Select(r => r.MemberId).Distinct().Count(), counts.Sum(c => c.Amount));
 
         return new CampaignReportDto(start, end, totals, campaigns);
@@ -87,6 +88,7 @@ public sealed class ReportsController(MemberPulseDbContext db, TimeProvider time
         var kpis = Kpi(
             sent.Count,
             rows.Count(r => r.Status == DeliveryStatus.Failed),
+            rows.Count(r => r.Status == DeliveryStatus.Pending),
             rows.Count(r => r.ConvertedAt != null),
             sent.Select(r => r.MemberId).Distinct().Count(),
             rows.Sum(r => r.ConversionAmount ?? 0m));
@@ -103,8 +105,8 @@ public sealed class ReportsController(MemberPulseDbContext db, TimeProvider time
     private IQueryable<CampaignDelivery> InRange(DateTimeOffset start, DateTimeOffset end) =>
         db.CampaignDeliveries.AsNoTracking().Where(d => d.CreatedAt >= start && d.CreatedAt <= end);
 
-    private static KpiDto Kpi(int sent, int failed, int converted, int reached, decimal amount) =>
-        new(sent, failed, converted, sent == 0 ? 0m : Math.Round((decimal)converted / sent, 4), reached, amount);
+    private static KpiDto Kpi(int sent, int failed, int pending, int converted, int reached, decimal amount) =>
+        new(sent, failed, pending, converted, sent == 0 ? 0m : Math.Round((decimal)converted / sent, 4), reached, amount);
 
     private bool TryResolveRange(
         DateTimeOffset? from, DateTimeOffset? to,

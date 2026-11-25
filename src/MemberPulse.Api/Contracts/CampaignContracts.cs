@@ -72,6 +72,7 @@ public sealed record DeliveryDto(
     CampaignChannel Channel,
     string Message,
     DeliveryStatus Status,
+    int Attempts,
     string? Error,
     DateTimeOffset CreatedAt,
     DateTimeOffset? ConvertedAt,

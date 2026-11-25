@@ -9,7 +9,7 @@ namespace MemberPulse.Tests.Integration;
 /// Runs the whole app as in Development (real migrations, SQL Server, Kafka producer and consumer),
 /// but against a throwaway database and a topic/consumer group unique to this run.
 /// </summary>
-public sealed class RealInfrastructureFactory : WebApplicationFactory<Program>
+public class RealInfrastructureFactory : WebApplicationFactory<Program>
 {
     private readonly string _runId = Guid.NewGuid().ToString("N")[..10];
 
@@ -31,7 +31,11 @@ public sealed class RealInfrastructureFactory : WebApplicationFactory<Program>
             ["Kafka:ConsumerGroup"] = $"memberpulse-it-{_runId}",
             ["Kafka:PollIntervalMilliseconds"] = "200",
         }));
+        ConfigureOverrides(builder);
     }
+
+    /// <summary>Lets a subclass change settings or services after the defaults above.</summary>
+    protected virtual void ConfigureOverrides(IWebHostBuilder builder) { }
 
     private string _server = string.Empty;
 

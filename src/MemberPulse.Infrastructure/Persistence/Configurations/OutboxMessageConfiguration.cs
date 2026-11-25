@@ -16,8 +16,9 @@ internal sealed class OutboxMessageConfiguration : IEntityTypeConfiguration<Outb
         builder.Property(m => m.Type).HasMaxLength(100).IsRequired();
         builder.Property(m => m.Payload).IsRequired();
         builder.Property(m => m.LastError).HasMaxLength(500);
+        builder.HasIndex(m => m.Key);
 
         // The dispatcher only ever looks at unprocessed rows.
-        builder.HasIndex(m => m.CreatedAt).HasFilter("[ProcessedAt] IS NULL");
+        builder.HasIndex(m => m.CreatedAt).HasFilter("[ProcessedAt] IS NULL AND [DeadLetteredAt] IS NULL");
     }
 }

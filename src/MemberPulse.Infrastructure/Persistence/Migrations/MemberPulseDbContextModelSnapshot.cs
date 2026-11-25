@@ -144,6 +144,9 @@ namespace MemberPulse.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<int>("Attempts")
+                        .HasColumnType("int");
+
                     b.Property<Guid>("CampaignId")
                         .HasColumnType("uniqueidentifier");
 
@@ -177,6 +180,9 @@ namespace MemberPulse.Infrastructure.Persistence.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
 
+                    b.Property<DateTimeOffset?>("NextAttemptAt")
+                        .HasColumnType("datetimeoffset");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -186,6 +192,9 @@ namespace MemberPulse.Infrastructure.Persistence.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("NextAttemptAt")
+                        .HasFilter("[Status] = 'Pending'");
 
                     b.HasIndex("CampaignId", "TransactionId")
                         .IsUnique();
@@ -269,6 +278,12 @@ namespace MemberPulse.Infrastructure.Persistence.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
 
+                    b.Property<int>("FailedLoginCount")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset?>("LockedUntil")
+                        .HasColumnType("datetimeoffset");
+
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasMaxLength(500)
@@ -298,6 +313,9 @@ namespace MemberPulse.Infrastructure.Persistence.Migrations
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("datetimeoffset");
 
+                    b.Property<DateTimeOffset?>("DeadLetteredAt")
+                        .HasColumnType("datetimeoffset");
+
                     b.Property<string>("Key")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -306,6 +324,9 @@ namespace MemberPulse.Infrastructure.Persistence.Migrations
                     b.Property<string>("LastError")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTimeOffset?>("NextAttemptAt")
+                        .HasColumnType("datetimeoffset");
 
                     b.Property<string>("Payload")
                         .IsRequired()
@@ -327,7 +348,9 @@ namespace MemberPulse.Infrastructure.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CreatedAt")
-                        .HasFilter("[ProcessedAt] IS NULL");
+                        .HasFilter("[ProcessedAt] IS NULL AND [DeadLetteredAt] IS NULL");
+
+                    b.HasIndex("Key");
 
                     b.ToTable("OutboxMessages", (string)null);
                 });

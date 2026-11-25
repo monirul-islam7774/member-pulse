@@ -66,7 +66,7 @@ public class ConversionsApiTests(MemberPulseApiFactory factory) : IClassFixture<
     private async Task ProcessAsync(Guid accountId)
     {
         using var scope = factory.Services.CreateScope();
-        await scope.ServiceProvider.GetRequiredService<OutboxProcessor>().ProcessBatchAsync(100, CancellationToken.None);
+        await scope.ServiceProvider.GetRequiredService<OutboxProcessor>().ProcessBatchAsync(100, 20, CancellationToken.None);
 
         var events = factory.Services.GetRequiredService<RecordingEventPublisher>().Published
             .Where(p => p.Key == accountId.ToString())
@@ -165,7 +165,7 @@ public class ConversionsApiTests(MemberPulseApiFactory factory) : IClassFixture<
 
         var report = await DetailAsync(campaign.Id);
 
-        Assert.Equal(new KpiDto(0, 0, 0, 0m, 0, 0m), report!.Campaign.Kpis);
+        Assert.Equal(new KpiDto(0, 0, 0, 0, 0m, 0, 0m), report!.Campaign.Kpis);
         Assert.Empty(report.Daily);
     }
 

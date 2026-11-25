@@ -26,4 +26,10 @@ public sealed class CreateStaffUserRequest
     public StaffRole? Role { get; init; }
 }
 
+public sealed class UnlockUserRequest
+{
+    [Required, EmailAddress, MaxLength(256)]
+    public string Email { get; init; } = string.Empty;
+}
+
 public sealed record StaffUserDto(Guid Id, string Email, StaffRole Role, DateTimeOffset CreatedAt);

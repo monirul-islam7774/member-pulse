@@ -102,8 +102,9 @@ public sealed class TriggerEngine(
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
-                logger.LogWarning(ex, "Sending campaign {CampaignId} to member {MemberId} failed", campaign.Id, member.Id);
-                delivery.MarkFailed(ex.Message);
+                var gaveUp = delivery.RecordFailure(ex.Message, time.GetUtcNow());
+                logger.LogWarning(ex, "Sending campaign {CampaignId} to member {MemberId} failed (attempt {Attempts}){Outcome}",
+                    campaign.Id, member.Id, delivery.Attempts, gaveUp ? "; giving up" : "; will retry");
             }
 
             await db.SaveChangesAsync(CancellationToken.None);

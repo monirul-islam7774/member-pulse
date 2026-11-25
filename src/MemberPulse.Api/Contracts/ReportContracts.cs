@@ -1,12 +1,14 @@
 namespace MemberPulse.Api.Contracts;
 
 /// <summary>
-/// Sent/Failed count messages by when they were sent. Converted counts those messages that led to a
-/// conversion (so it can only grow as members respond). ConversionRate = Converted / Sent.
+/// Sent/Failed/Pending count messages by when they were created. Pending are still being retried after a failed
+/// send. Failed gave up. Converted counts those messages that led to a conversion (so it can only grow as members
+/// respond). ConversionRate = Converted / Sent.
 /// </summary>
 public sealed record KpiDto(
     int Sent,
     int Failed,
+    int Pending,
     int Converted,
     decimal ConversionRate,
     int MembersReached,

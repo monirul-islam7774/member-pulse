@@ -42,6 +42,7 @@ await app.Services.BootstrapAdminAsync();
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 

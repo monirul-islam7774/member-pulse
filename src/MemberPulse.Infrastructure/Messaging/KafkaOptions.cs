@@ -20,4 +20,10 @@ public sealed class KafkaOptions
     public int PollIntervalMilliseconds { get; set; } = 1000;
 
     public int BatchSize { get; set; } = 50;
+
+    /// <summary>A message that fails this many times is dead-lettered. With the backoff this rides out roughly an hour of outage.</summary>
+    public int MaxPublishAttempts { get; set; } = 20;
+
+    /// <summary>Published outbox rows older than this are deleted.</summary>
+    public int ProcessedRetentionDays { get; set; } = 7;
 }

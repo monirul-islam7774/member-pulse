@@ -95,7 +95,7 @@ public sealed class CampaignsController(MemberPulseDbContext db, TimeProvider ti
         var items = await query
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Select(d => new DeliveryDto(d.Id, d.CampaignId, d.MemberId, d.TransactionId, d.Channel, d.Message, d.Status, d.Error, d.CreatedAt,
+            .Select(d => new DeliveryDto(d.Id, d.CampaignId, d.MemberId, d.TransactionId, d.Channel, d.Message, d.Status, d.Attempts, d.Error, d.CreatedAt,
                 d.ConvertedAt, d.ConversionTransactionId, d.ConversionAmount))
             .ToListAsync(cancellationToken);
 

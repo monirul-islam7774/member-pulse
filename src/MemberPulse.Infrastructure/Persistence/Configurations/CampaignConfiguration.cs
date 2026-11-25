@@ -47,6 +47,7 @@ internal sealed class CampaignDeliveryConfiguration : IEntityTypeConfiguration<C
         builder.Property(d => d.Error).HasMaxLength(500);
         builder.Property(d => d.ConversionAmount).HasPrecision(18, 2);
         builder.Ignore(d => d.IsConverted);
+        builder.HasIndex(d => d.NextAttemptAt).HasFilter("[Status] = 'Pending'"); // retry worker
         builder.Property(d => d.Channel).HasConversion<string>().HasMaxLength(20);
         builder.Property(d => d.Status).HasConversion<string>().HasMaxLength(20);
 

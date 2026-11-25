@@ -24,6 +24,10 @@ public sealed class OutboxMessage
     public DateTimeOffset? ProcessedAt { get; private set; }
     public int Attempts { get; private set; }
     public string? LastError { get; private set; }
+    /// <summary>After a failure, don't retry before this time (exponential backoff).</summary>
+    public DateTimeOffset? NextAttemptAt { get; private set; }
+    /// <summary>Gave up after too many failed attempts. Kept for inspection and manual retry; no longer blocks later messages.</summary>
+    public DateTimeOffset? DeadLetteredAt { get; private set; }
 
     public static OutboxMessage ForTransaction(string topic, TransactionPosted evt, DateTimeOffset now) => new()
     {
@@ -44,9 +48,31 @@ public sealed class OutboxMessage
         LastError = null;
     }
 
-    public void MarkFailed(string error)
+    /// <summary>2s, 4s, 8s ... capped at 5 minutes.</summary>
+    public static TimeSpan BackoffFor(int attempts) => TimeSpan.FromSeconds(Math.Min(300, Math.Pow(2, Math.Min(attempts, 20))));
+
+    /// <returns>True if this was the last attempt and the message is now dead-lettered.</returns>
+    public bool MarkFailed(string error, DateTimeOffset now, int maxAttempts)
     {
         Attempts++;
         LastError = error.Length > 500 ? error[..500] : error;
+
+        if (Attempts >= maxAttempts)
+        {
+            DeadLetteredAt = now;
+            NextAttemptAt = null;
+            return true;
+        }
+
+        NextAttemptAt = now + BackoffFor(Attempts);
+        return false;
+    }
+
+    /// <summary>Puts a dead-lettered message back in the queue for a fresh run of attempts.</summary>
+    public void Revive()
+    {
+        DeadLetteredAt = null;
+        NextAttemptAt = null;
+        Attempts = 0;
     }
 }

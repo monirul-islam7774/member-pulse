@@ -18,7 +18,10 @@ public static class MessagingSetup
                 : ActivatorUtilities.CreateInstance<KafkaEventPublisher>(sp));
 
         services.AddSingleton<IMessageSender, LoggingMessageSender>();
+        services.AddOptions<CampaignOptions>().BindConfiguration(CampaignOptions.SectionName);
         services.AddScoped<TriggerEngine>();
+        services.AddScoped<DeliveryRetrier>();
+        services.AddHostedService<DeliveryRetryWorker>();
         services.AddScoped<ConversionTracker>();
         services.AddScoped<TransactionEventHandler>();
         services.AddHostedService<TransactionEventConsumer>();
