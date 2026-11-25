@@ -29,7 +29,26 @@ public sealed class CreateCampaignRequest
     /// <summary>Minimum days between messages from this campaign to the same member. 0 = no limit.</summary>
     [Range(0, 3650)]
     public int CooldownDays { get; init; }
+
+    /// <summary>Days after a message in which a qualifying transaction counts as a conversion.</summary>
+    [Range(1, 90)]
+    public int ConversionWindowDays { get; init; } = 7;
+
+    /// <summary>Defaults to Debit: the member went on to spend.</summary>
+    public TransactionDirection ConversionDirection { get; init; } = TransactionDirection.Debit;
+
+    [Range(0d, 1_000_000_000d)]
+    public decimal? ConversionMinAmount { get; init; }
+
+    [MaxLength(50)]
+    public string? ConversionMerchantCategory { get; init; }
 }
+
+public sealed record ConversionGoalDto(
+    int WindowDays,
+    TransactionDirection Direction,
+    decimal? MinAmount,
+    string? MerchantCategory);
 
 public sealed record CampaignDto(
     Guid Id,
@@ -41,6 +60,7 @@ public sealed record CampaignDto(
     decimal? MinAmount,
     string? MerchantCategory,
     int CooldownDays,
+    ConversionGoalDto Conversion,
     CampaignStatus Status,
     DateTimeOffset CreatedAt);
 
@@ -53,4 +73,7 @@ public sealed record DeliveryDto(
     string Message,
     DeliveryStatus Status,
     string? Error,
-    DateTimeOffset CreatedAt);
+    DateTimeOffset CreatedAt,
+    DateTimeOffset? ConvertedAt,
+    Guid? ConversionTransactionId,
+    decimal? ConversionAmount);

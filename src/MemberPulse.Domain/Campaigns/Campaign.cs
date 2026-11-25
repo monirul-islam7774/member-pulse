@@ -36,13 +36,15 @@ public sealed class Campaign
     /// <summary>Triggering transaction must be in this merchant category. Null = any.</summary>
     public string? MerchantCategory { get; private set; }
     public int CooldownDays { get; private set; }
+    /// <summary>What counts as a member responding to this campaign's messages.</summary>
+    public ConversionGoal Conversion { get; private set; } = ConversionGoal.Default;
     public CampaignStatus Status { get; private set; }
     public DateTimeOffset CreatedAt { get; private set; }
 
     public static Campaign Create(
         string name, Guid segmentId, CampaignChannel channel, string messageTemplate,
         TransactionDirection direction, decimal? minAmount, string? merchantCategory,
-        int cooldownDays, DateTimeOffset createdAt)
+        int cooldownDays, DateTimeOffset createdAt, ConversionGoal? conversion = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
         ArgumentException.ThrowIfNullOrWhiteSpace(messageTemplate);
@@ -63,6 +65,7 @@ public sealed class Campaign
             MinAmount = minAmount,
             MerchantCategory = string.IsNullOrWhiteSpace(merchantCategory) ? null : merchantCategory.Trim(),
             CooldownDays = cooldownDays,
+            Conversion = conversion ?? ConversionGoal.Default,
             Status = CampaignStatus.Active,
             CreatedAt = createdAt,
         };
@@ -75,20 +78,8 @@ public sealed class Campaign
     /// <summary>Whether this transaction is the kind of event the campaign reacts to. Segment membership is checked separately.</summary>
     public bool AppliesTo(TransactionPosted evt)
     {
-        if (Status != CampaignStatus.Active) return false;
-
-        var directionMatches = Direction switch
-        {
-            TransactionDirection.Debit => evt.Amount < 0,
-            TransactionDirection.Credit => evt.Amount > 0,
-            _ => true,
-        };
-        if (!directionMatches) return false;
-
-        if (MinAmount is { } min && Math.Abs(evt.Amount) < min) return false;
-
-        return MerchantCategory is null
-            || string.Equals(MerchantCategory, evt.MerchantCategory, StringComparison.OrdinalIgnoreCase);
+        return Status == CampaignStatus.Active
+            && TransactionFilter.Matches(Direction, MinAmount, MerchantCategory, evt);
     }
 
     public string Render(string firstName, TransactionPosted evt) => MessageTemplate

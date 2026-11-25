@@ -152,6 +152,16 @@ namespace MemberPulse.Infrastructure.Persistence.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
 
+                    b.Property<decimal?>("ConversionAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid?>("ConversionTransactionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset?>("ConvertedAt")
+                        .HasColumnType("datetimeoffset");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("datetimeoffset");
 
@@ -177,10 +187,10 @@ namespace MemberPulse.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("MemberId");
-
                     b.HasIndex("CampaignId", "TransactionId")
                         .IsUnique();
+
+                    b.HasIndex("MemberId", "CreatedAt");
 
                     b.HasIndex("CampaignId", "MemberId", "CreatedAt");
 
@@ -346,6 +356,42 @@ namespace MemberPulse.Infrastructure.Persistence.Migrations
                         .WithMany()
                         .HasForeignKey("SegmentId")
                         .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.OwnsOne("MemberPulse.Domain.Campaigns.ConversionGoal", "Conversion", b1 =>
+                        {
+                            b1.Property<Guid>("CampaignId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<string>("Direction")
+                                .IsRequired()
+                                .HasMaxLength(20)
+                                .HasColumnType("nvarchar(20)")
+                                .HasColumnName("ConversionDirection");
+
+                            b1.Property<string>("MerchantCategory")
+                                .HasMaxLength(50)
+                                .HasColumnType("nvarchar(50)")
+                                .HasColumnName("ConversionMerchantCategory");
+
+                            b1.Property<decimal?>("MinAmount")
+                                .HasPrecision(18, 2)
+                                .HasColumnType("decimal(18,2)")
+                                .HasColumnName("ConversionMinAmount");
+
+                            b1.Property<int>("WindowDays")
+                                .HasColumnType("int")
+                                .HasColumnName("ConversionWindowDays");
+
+                            b1.HasKey("CampaignId");
+
+                            b1.ToTable("Campaigns");
+
+                            b1.WithOwner()
+                                .HasForeignKey("CampaignId");
+                        });
+
+                    b.Navigation("Conversion")
                         .IsRequired();
                 });
 

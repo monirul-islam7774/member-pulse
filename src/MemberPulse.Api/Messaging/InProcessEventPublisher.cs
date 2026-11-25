@@ -5,7 +5,7 @@ using MemberPulse.Infrastructure.Messaging;
 namespace MemberPulse.Api.Messaging;
 
 /// <summary>
-/// Used when no Kafka brokers are configured: hands events straight to the trigger engine,
+/// Used when no Kafka brokers are configured: hands events straight to the event handler (conversions + trigger engine),
 /// so campaigns still work in local development without a broker.
 /// </summary>
 public sealed class InProcessEventPublisher(IServiceScopeFactory scopes, ILogger<InProcessEventPublisher> logger) : IEventPublisher
@@ -23,6 +23,6 @@ public sealed class InProcessEventPublisher(IServiceScopeFactory scopes, ILogger
             ?? throw new InvalidOperationException("Outbox payload was not a TransactionPosted event.");
 
         await using var scope = scopes.CreateAsyncScope();
-        await scope.ServiceProvider.GetRequiredService<TriggerEngine>().HandleAsync(evt, cancellationToken);
+        await scope.ServiceProvider.GetRequiredService<TransactionEventHandler>().HandleAsync(evt, cancellationToken);
     }
 }

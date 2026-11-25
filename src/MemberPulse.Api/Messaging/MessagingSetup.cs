@@ -19,6 +19,8 @@ public static class MessagingSetup
 
         services.AddSingleton<IMessageSender, LoggingMessageSender>();
         services.AddScoped<TriggerEngine>();
+        services.AddScoped<ConversionTracker>();
+        services.AddScoped<TransactionEventHandler>();
         services.AddHostedService<TransactionEventConsumer>();
 
         services.AddScoped<OutboxProcessor>();

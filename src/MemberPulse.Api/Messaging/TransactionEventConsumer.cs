@@ -5,7 +5,7 @@ using Microsoft.Extensions.Options;
 
 namespace MemberPulse.Api.Messaging;
 
-/// <summary>Reads TransactionPosted events from Kafka and runs them through the trigger engine.</summary>
+/// <summary>Reads TransactionPosted events from Kafka and runs them through the event handler (conversions + trigger engine).</summary>
 public sealed class TransactionEventConsumer(
     IServiceScopeFactory scopes,
     IOptions<KafkaOptions> options,
@@ -83,7 +83,7 @@ public sealed class TransactionEventConsumer(
                     ?? throw new InvalidOperationException("Payload was not a TransactionPosted event.");
 
                 await using var scope = scopes.CreateAsyncScope();
-                await scope.ServiceProvider.GetRequiredService<TriggerEngine>().HandleAsync(evt, stoppingToken);
+                await scope.ServiceProvider.GetRequiredService<TransactionEventHandler>().HandleAsync(evt, stoppingToken);
                 return;
             }
             catch (Exception ex) when (ex is not OperationCanceledException)

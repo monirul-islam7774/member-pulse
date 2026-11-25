@@ -47,7 +47,9 @@ public sealed class CampaignsController(MemberPulseDbContext db, TimeProvider ti
         {
             campaign = Campaign.Create(
                 name, request.SegmentId!.Value, request.Channel!.Value, request.MessageTemplate,
-                request.Direction, request.MinAmount, request.MerchantCategory, request.CooldownDays, time.GetUtcNow());
+                request.Direction, request.MinAmount, request.MerchantCategory, request.CooldownDays, time.GetUtcNow(),
+                ConversionGoal.Create(request.ConversionWindowDays, request.ConversionDirection,
+                    request.ConversionMinAmount, request.ConversionMerchantCategory));
         }
         catch (ArgumentException ex)
         {
@@ -93,7 +95,8 @@ public sealed class CampaignsController(MemberPulseDbContext db, TimeProvider ti
         var items = await query
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Select(d => new DeliveryDto(d.Id, d.CampaignId, d.MemberId, d.TransactionId, d.Channel, d.Message, d.Status, d.Error, d.CreatedAt))
+            .Select(d => new DeliveryDto(d.Id, d.CampaignId, d.MemberId, d.TransactionId, d.Channel, d.Message, d.Status, d.Error, d.CreatedAt,
+                d.ConvertedAt, d.ConversionTransactionId, d.ConversionAmount))
             .ToListAsync(cancellationToken);
 
         return new PagedResult<DeliveryDto>(items, page, pageSize, total);
@@ -114,5 +117,7 @@ public sealed class CampaignsController(MemberPulseDbContext db, TimeProvider ti
 
     private static CampaignDto ToDto(Campaign c) => new(
         c.Id, c.Name, c.SegmentId, c.Channel, c.MessageTemplate, c.Direction,
-        c.MinAmount, c.MerchantCategory, c.CooldownDays, c.Status, c.CreatedAt);
+        c.MinAmount, c.MerchantCategory, c.CooldownDays,
+        new ConversionGoalDto(c.Conversion.WindowDays, c.Conversion.Direction, c.Conversion.MinAmount, c.Conversion.MerchantCategory),
+        c.Status, c.CreatedAt);
 }

@@ -52,7 +52,9 @@ dotnet test
 | `GET /api/members/{id}/segments` | Segments a member currently belongs to |
 | `GET/POST /api/campaigns`, `GET /api/campaigns/{id}` | List, create and read campaigns |
 | `POST /api/campaigns/{id}/pause`, `.../resume` | Stop or restart a campaign |
-| `GET /api/campaigns/{id}/deliveries` | Messages the campaign has triggered |
+| `GET /api/campaigns/{id}/deliveries` | Messages the campaign has triggered, with conversion details |
+| `GET /api/reports/campaigns?from=&to=` | KPIs per campaign and in total (default: last 30 days, max 366) |
+| `GET /api/reports/campaigns/{id}?from=&to=` | One campaign's KPIs plus a daily series |
 
 ### Authentication
 
@@ -92,6 +94,22 @@ in the campaign's segment *at that moment*, then records a delivery and sends th
 - Messages go through `IMessageSender`. The default only **logs** them; plug in an email/SMS/push provider there.
 - A failed send is recorded as `Failed` and is not retried automatically.
 
+### Conversions and KPIs
+
+Each campaign has a **conversion goal**: `conversionWindowDays` (1-90, default 7), `conversionDirection`
+(default `Debit`), and optional `conversionMinAmount` / `conversionMerchantCategory`. A message *converts*
+when the same member later posts a transaction that meets the goal inside the window.
+
+- The first qualifying transaction wins; a delivery converts once, with that transaction's absolute amount.
+- The transaction that triggered the message can't convert it, and failed or unsent messages can't convert.
+- Paused campaigns keep tracking conversions of messages they already sent.
+- A transaction can convert messages from several campaigns (every campaign that reached the member gets credit).
+
+Reports give, per campaign and in total: `sent`, `failed`, `converted`, `conversionRate` (converted / sent),
+`membersReached` and `convertedAmount`. Messages are counted by when they were **sent**, so a message sent
+inside the range counts as converted even if the conversion happened after the range ended, and rates for
+recent messages keep rising until their windows close.
+
 ### Segments
 
 A segment is a name plus criteria; a member belongs when **all** criteria hold. Criteria are
@@ -107,4 +125,4 @@ with `accountType`; `Spend30d`/`TransactionCount30d` with `merchantCategory`.
 - [x] JWT authentication
 - [x] Kafka event publishing
 - [x] Trigger engine (BackgroundService) and campaigns
-- [ ] Conversion tracking and KPI reporting
+- [x] Conversion tracking and KPI reporting
