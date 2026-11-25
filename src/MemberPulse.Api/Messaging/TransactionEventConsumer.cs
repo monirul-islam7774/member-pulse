@@ -33,6 +33,7 @@ public sealed class TransactionEventConsumer(
             GroupId = o.ConsumerGroup,
             AutoOffsetReset = AutoOffsetReset.Earliest,
             EnableAutoCommit = false, // commit only after the engine has handled the event
+            AllowAutoCreateTopics = true, // the topic may not exist until the first event is published
         }).Build();
 
         consumer.Subscribe(o.TransactionsTopic);

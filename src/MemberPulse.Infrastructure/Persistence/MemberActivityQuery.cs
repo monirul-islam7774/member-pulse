@@ -13,6 +13,8 @@ public static class MemberActivityQuery
         return db.Members
             .AsNoTracking()
             .Include(m => m.Accounts)
-            .ThenInclude(a => a.Transactions.Where(t => t.OccurredAt > cutoff));
+            .ThenInclude(a => a.Transactions.Where(t => t.OccurredAt > cutoff))
+            // Members x accounts x transactions in one joined query repeats rows multiplicatively; load each level separately.
+            .AsSplitQuery();
     }
 }
