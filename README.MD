@@ -138,13 +138,38 @@ in the campaign's segment *at that moment*, then records a delivery and sends th
 
 - Each transaction triggers a given campaign at most once, so replayed Kafka events are harmless.
 - With Kafka configured a consumer (group `memberpulse-triggers`) feeds the engine; otherwise the in-process publisher does.
-- Messages go through `IMessageSender`. The default only **logs** them; plug in an email/SMS/push provider there.
+- **Email is really sent** once `Email:Host` is set (see below). SMS and push have no provider yet: those messages are
+  only **logged** (as a warning saying so), and the delivery still counts as sent. Everything goes through `IMessageSender`,
+  so another provider is one more class and one line in `ChannelRoutingMessageSender`.
 - **Failed sends are retried.** A failed send stays `Pending` and is retried after 30s, 2m, 8m and 32m. After 5 attempts
   it becomes `Failed` for good. `attempts` and `error` are shown on each delivery. A background worker does this every
   `Campaigns:RetryPollSeconds` (default 30).
 - A send that was lost mid-flight (the process died) is picked up again after 5 minutes. In that rare case a message
   can be sent twice, so the sender should tolerate duplicates.
 - Reports count `pending` messages separately, and a message can only convert once it has actually been `Sent`.
+
+### Sending email
+
+Campaign emails go out over SMTP (MailKit) as plain text, to the member's address, from `Email:FromAddress`.
+
+| Setting | Meaning |
+|---|---|
+| `Email:Host` | The SMTP server. **Empty = nothing is sent**; email messages are only logged. |
+| `Email:Port` | Default `587`. |
+| `Email:Security` | `StartTls` (default), `Ssl` (port 465) or `None` (only for a local test server). |
+| `Email:Username` / `Email:Password` | If the server needs a login. Supply the password through user-secrets or `Email__Password`, never the repo. |
+| `Email:FromAddress` | Required once a host is set. The app refuses to start with a half-set-up email section. |
+| `Email:FromName`, `Email:Subject` | Display name (default `MemberPulse`) and the subject used for every campaign (campaigns have no subject of their own yet). |
+| `Email:TimeoutSeconds` | Default `15`. |
+
+A send that fails (server down, address rejected) is recorded and retried by the delivery retry worker, and ends up as
+`Failed` after 5 attempts. There is one SMTP connection per message, which is fine for modest volumes.
+
+To read what members would receive without sending real mail, `docker compose up -d` starts
+[Mailpit](https://mailpit.axllent.org/) (inbox at `http://localhost:8025`, SMTP on `1025`; set `MAILPIT_UI_PORT` /
+`MAILPIT_SMTP_PORT` in `.env` if those ports are taken). The containerised API (`--profile app`) is already pointed at it.
+To try it from an API you run yourself, add `Email__Host=localhost Email__Port=1025 Email__Security=None
+Email__FromAddress=noreply@memberpulse.local`.
 
 ### Conversions and KPIs
 

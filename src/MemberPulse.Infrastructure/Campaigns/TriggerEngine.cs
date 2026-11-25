@@ -13,12 +13,13 @@ public interface IMessageSender
     Task SendAsync(CampaignChannel channel, Member member, string message, CancellationToken cancellationToken);
 }
 
-/// <summary>Default sender: writes the message to the log instead of contacting anyone.</summary>
+/// <summary>Fallback sender for channels with no provider configured: writes the message to the log and contacts nobody.</summary>
 public sealed class LoggingMessageSender(ILogger<LoggingMessageSender> logger) : IMessageSender
 {
     public Task SendAsync(CampaignChannel channel, Member member, string message, CancellationToken cancellationToken)
     {
-        logger.LogInformation("[{Channel}] to {Email}: {Message}", channel, member.Email, message);
+        logger.LogWarning("No provider is configured for {Channel}; the message was only logged, not delivered. To {Email}: {Message}",
+            channel, member.Email, message);
         return Task.CompletedTask;
     }
 }
