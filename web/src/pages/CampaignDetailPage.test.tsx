@@ -1,6 +1,6 @@
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { Link, MemoryRouter, Route, Routes } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
 import type { Campaign, CampaignDetailReport, Delivery, Kpi, Paged, Segment } from '../api/types';
 import { json, mockApi, problem } from '../test/http';
@@ -148,5 +148,32 @@ describe('CampaignDetailPage', () => {
     expect(await screen.findByText(/<script>alert\(1\)<\/script>/)).toBeInTheDocument();
     expect(await screen.findByText('<b>smtp</b>')).toBeInTheDocument();
     expect(document.querySelector('script, b')).toBeNull();
+  });
+
+  it('switching_to_another_campaign_never_shows_the_previous_campaigns_data', async () => {
+    let releaseSecond: (r: Response) => void = () => {};
+    mockApi({
+      ...base,
+      'GET /api/campaigns/c2': () => new Promise<Response>((resolve) => { releaseSecond = resolve; }),
+      'GET /api/reports/campaigns/c2': json(report(kpis)),
+      'GET /api/campaigns/c2/deliveries': json(deliveries([])),
+    });
+    render(
+      <MemoryRouter initialEntries={['/campaigns/c1']}>
+        <Link to="/campaigns/c2">other campaign</Link>
+        <Routes>
+          <Route path="/campaigns/:id" element={<CampaignDetailPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    await screen.findByRole('heading', { name: 'Travel push' });
+
+    await userEvent.setup().click(screen.getByRole('link', { name: 'other campaign' }));
+
+    expect(screen.queryByRole('heading', { name: 'Travel push' })).not.toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent(/loading campaign/i);
+
+    releaseSecond(json({ ...campaign, id: 'c2', name: 'Second campaign' }));
+    expect(await screen.findByRole('heading', { name: 'Second campaign' })).toBeInTheDocument();
   });
 });

@@ -76,7 +76,13 @@ function CampaignView({ campaign, onChanged }: { campaign: Campaign; onChanged: 
         <h2>Settings</h2>
         <Settings
           campaign={campaign}
-          segmentName={segments.data ? (segments.data.find((s) => s.id === campaign.segmentId)?.name ?? 'Unknown segment') : ''}
+          segmentName={
+            segments.error
+              ? 'Unavailable'
+              : segments.data
+                ? (segments.data.find((s) => s.id === campaign.segmentId)?.name ?? 'Unknown segment')
+                : ''
+          }
         />
       </section>
 
@@ -135,8 +141,13 @@ function CampaignView({ campaign, onChanged }: { campaign: Campaign; onChanged: 
   );
 }
 
+/** Keyed by id: a different campaign is a fresh page, so nothing of the previous one lingers under the new URL. */
 export function CampaignDetailPage() {
   const { id = '' } = useParams();
+  return <CampaignDetailLoader key={id} id={id} />;
+}
+
+function CampaignDetailLoader({ id }: { id: string }) {
   const campaign = useAsync(() => getCampaign(id), [id]);
 
   if (campaign.error instanceof ApiError && campaign.error.status === 404) {

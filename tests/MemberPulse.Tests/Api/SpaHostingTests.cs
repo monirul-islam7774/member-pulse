@@ -13,6 +13,8 @@ public sealed class SpaApiFactory : MemberPulseApiFactory
         Directory.CreateDirectory(_webRoot);
         File.WriteAllText(Path.Combine(_webRoot, "index.html"), "<html><body>spa-shell</body></html>");
         File.WriteAllText(Path.Combine(_webRoot, "app.js"), "console.log('spa-script');");
+        Directory.CreateDirectory(Path.Combine(_webRoot, "assets"));
+        File.WriteAllText(Path.Combine(_webRoot, "assets", "index-abc123.js"), "console.log('hashed');");
 
         base.ConfigureWebHost(builder);
         builder.UseWebRoot(_webRoot);
@@ -38,6 +40,37 @@ public class SpaHostingTests(SpaApiFactory factory) : IClassFixture<SpaApiFactor
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Contains("spa-shell", await response.Content.ReadAsStringAsync());
         Assert.Equal("text/html", response.Content.Headers.ContentType?.MediaType);
+    }
+
+    [Theory]
+    [InlineData("/")]
+    [InlineData("/index.html")]
+    [InlineData("/campaigns/3fa85f64-5717-4562-b3fc-2c963f66afa6")]
+    public async Task The_page_itself_is_always_revalidated_so_a_deploy_never_leaves_a_stale_shell_pointing_at_deleted_assets(string path)
+    {
+        var response = await factory.CreateClient().GetAsync(path);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.True(response.Headers.CacheControl?.NoCache, $"Cache-Control was '{response.Headers.CacheControl}'");
+    }
+
+    [Fact]
+    public async Task Hashed_build_assets_are_cached_for_a_year_because_their_names_change_with_their_content()
+    {
+        var response = await factory.CreateClient().GetAsync("/assets/index-abc123.js");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var cacheControl = response.Headers.CacheControl!.ToString();
+        Assert.Contains("max-age=31536000", cacheControl);
+        Assert.Contains("immutable", cacheControl);
+    }
+
+    [Fact]
+    public async Task Other_static_files_are_not_given_a_long_cache_lifetime()
+    {
+        var response = await factory.CreateClient().GetAsync("/app.js");
+
+        Assert.NotEqual(TimeSpan.FromDays(365), response.Headers.CacheControl?.MaxAge);
     }
 
     [Fact]
