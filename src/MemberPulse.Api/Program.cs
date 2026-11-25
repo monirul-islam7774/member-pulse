@@ -24,15 +24,26 @@ builder.Services.AddHealthChecks().AddDbContextCheck<MemberPulseDbContext>();
 
 var app = builder.Build();
 
-// 2. Startup tasks (Development only)
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi().AllowAnonymous();
+// 2. Startup tasks
+var isDevelopment = app.Environment.IsDevelopment();
 
+// Development always brings the database up to date. Elsewhere it's opt-in (Database:MigrateOnStartup=true), which
+// is what the container image uses; with several instances, prefer running migrations as a separate deploy step.
+if (isDevelopment || app.Configuration.GetValue<bool>("Database:MigrateOnStartup"))
+{
     await using var scope = app.Services.CreateAsyncScope();
     var db = scope.ServiceProvider.GetRequiredService<MemberPulseDbContext>();
     await db.Database.MigrateAsync();
-    await DevDataSeeder.SeedAsync(db);
+
+    if (isDevelopment)
+    {
+        await DevDataSeeder.SeedAsync(db);
+    }
+}
+
+if (isDevelopment)
+{
+    app.MapOpenApi().AllowAnonymous();
 }
 
 // Creates the first admin if Seed:AdminEmail/AdminPassword are configured and no staff exist yet.

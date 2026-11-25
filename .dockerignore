@@ -1,0 +1,17 @@
+# Keep the build context small and stop host build output or secrets leaking into the image.
+**/bin/
+**/obj/
+.git/
+.github/
+.vs/
+.idea/
+tests/
+docs/
+*.md
+*.MD
+.env
+.env.*
+!.env.example
+docker-compose*.yml
+Dockerfile
+.dockerignore

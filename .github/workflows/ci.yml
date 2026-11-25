@@ -18,6 +18,13 @@ jobs:
       # Fast tests: in-memory database, fake Kafka publisher. Integration tests are skipped here.
       - run: dotnet test MemberPulse.slnx --no-build --configuration Release
 
+  # The container image must keep building.
+  docker-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - run: docker build --tag memberpulse-api .
+
   # The same end-to-end flow as a real run: SQL Server migrations, Kafka producer + consumer, campaigns, KPIs.
   integration-tests:
     runs-on: ubuntu-latest

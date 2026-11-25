@@ -32,6 +32,22 @@ dotnet run --project src/MemberPulse.Api
 dotnet test
 ```
 
+### Running the API in Docker
+
+```bash
+cp .env.example .env          # then set JWT_KEY (32+ random characters) and ADMIN_PASSWORD
+docker compose --profile app up --build
+```
+
+This starts SQL Server, Kafka and the API (image built from the `Dockerfile`) on `http://localhost:5091`. A plain
+`docker compose up -d` still starts only SQL Server and Kafka, for running the API from your IDE.
+
+The container runs in the `Production` environment, as an unprivileged user, and is configured entirely through
+environment variables (`ConnectionStrings__MemberPulse`, `Jwt__Key`, `Kafka__BootstrapServers`, `Seed__AdminEmail`,
+`Seed__AdminPassword`). Production never creates the dev sample data or the development admin, and doesn't serve
+OpenAPI. It applies database migrations on startup only when `Database__MigrateOnStartup=true` (set in the compose
+file); with more than one instance, run migrations as a separate deploy step instead.
+
 ## API
 
 | Endpoint | Description |

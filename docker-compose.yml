@@ -9,6 +9,12 @@ services:
       - "1433:1433"
     volumes:
       - sqldata:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P 'MemberPulse_Dev123!' -Q 'SELECT 1' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
 
   kafka:
     image: apache/kafka:3.9.0
@@ -18,15 +24,54 @@ services:
     environment:
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
-      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      # PLAINTEXT is for your machine (localhost:9092); INTERNAL is for other containers (kafka:29092).
+      KAFKA_LISTENERS: PLAINTEXT://:9092,INTERNAL://:29092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,INTERNAL://kafka:29092
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,INTERNAL:PLAINTEXT
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 > /dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 15s
+
+  # The API itself. Not started by a plain `docker compose up`, so the usual dev flow (infrastructure in Docker,
+  # API from your IDE) is unchanged. Run it with:  docker compose --profile app up --build
+  api:
+    profiles: ["app"]
+    build: .
+    image: memberpulse-api
+    container_name: memberpulse-api
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    ports:
+      - "5091:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__MemberPulse: "Server=sqlserver,1433;Database=MemberPulse;User Id=sa;Password=MemberPulse_Dev123!;TrustServerCertificate=True"
+      Kafka__BootstrapServers: "kafka:29092"
+      # Production doesn't create the schema on its own; this opts in. Safe to leave on: it only applies what's missing.
+      Database__MigrateOnStartup: "true"
+      # No defaults for secrets: put these in your shell or an (untracked) .env file. See .env.example.
+      Jwt__Key: ${JWT_KEY:?Set JWT_KEY to a random string of 32+ characters (see .env.example)}
+      Seed__AdminEmail: ${ADMIN_EMAIL:-admin@memberpulse.local}
+      Seed__AdminPassword: ${ADMIN_PASSWORD:?Set ADMIN_PASSWORD for the first admin account (see .env.example)}
+    healthcheck:
+      # The runtime image has no curl, so speak HTTP over bash's /dev/tcp.
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8080 && printf 'GET /health HTTP/1.0\\r\\nHost: localhost\\r\\n\\r\\n' >&3 && head -n1 <&3 | grep -q ' 200 '"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
 
 volumes:
   sqldata:
