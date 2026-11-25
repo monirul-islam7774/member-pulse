@@ -18,11 +18,23 @@ export function EmptyState({ title, children }: { title: string; children?: Reac
   );
 }
 
+/** What to tell the user: the API's own explanation, including per-field validation messages when it sends them. */
 export function errorMessage(error: unknown): string {
   if (error instanceof ApiError) {
-    return error.status === 0 ? "Can't reach the server. Check your connection." : error.message;
+    if (error.status === 0) return "Can't reach the server. Check your connection.";
+    const fieldMessages = Object.values(error.problem?.errors ?? {}).flat();
+    return fieldMessages.length > 0 ? fieldMessages.join(' ') : error.message;
   }
   return 'Something went wrong.';
+}
+
+/** An inline failure message for a form. */
+export function FormError({ error }: { error: unknown }) {
+  return (
+    <p role="alert" className="form-error">
+      {typeof error === 'string' ? error : errorMessage(error)}
+    </p>
+  );
 }
 
 export function ErrorState({ error, onRetry }: { error: unknown; onRetry?: () => void }) {

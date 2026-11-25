@@ -2,6 +2,8 @@ import { Route, Routes } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { DashboardPage } from './pages/DashboardPage';
 import { LoginPage } from './pages/LoginPage';
+import { MemberDetailPage } from './pages/MemberDetailPage';
+import { MembersPage } from './pages/MembersPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 
 // Screens arrive task by task; until then their routes show a stand-in.
@@ -15,8 +17,8 @@ export function AppRoutes() {
       <Route path="/login" element={<LoginPage />} />
       <Route element={<Layout />}>
         <Route index element={<DashboardPage />} />
-        <Route path="members" element={<Soon title="Members" />} />
-        <Route path="members/:id" element={<Soon title="Member" />} />
+        <Route path="members" element={<MembersPage />} />
+        <Route path="members/:id" element={<MemberDetailPage />} />
         <Route path="segments" element={<Soon title="Segments" />} />
         <Route path="campaigns" element={<Soon title="Campaigns" />} />
         <Route path="campaigns/:id" element={<Soon title="Campaign" />} />
