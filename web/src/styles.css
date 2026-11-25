@@ -286,6 +286,8 @@ a {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 1rem;
+  /* a label that wraps onto two lines must not push its input out of line with its neighbours */
+  align-items: end;
 }
 
 /* ---- forms and buttons ------------------------------------------------------------------------------------------ */
@@ -667,5 +669,80 @@ button:disabled {
   .btn,
   .table tbody tr {
     transition: background-color 0.12s, border-color 0.12s;
+  }
+}
+
+/* ---- lists of facts and form structure -------------------------------------------------------------------------- */
+
+.settings,
+.criteria {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.settings {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.settings > li {
+  display: grid;
+  grid-template-columns: minmax(150px, 230px) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: baseline;
+  overflow-wrap: anywhere;
+}
+
+.criteria {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.criteria > li {
+  padding-left: 0.7rem;
+  border-left: 3px solid var(--accent);
+}
+
+.criterion {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.75rem;
+  align-items: end;
+  padding: 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0.9rem 1rem 1.1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+legend {
+  padding: 0 0.4rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+h3 {
+  font-size: 1.02rem;
+}
+
+.toolbar .page-title {
+  margin: 0;
+}
+
+.hero-rate.small {
+  font-size: clamp(2.4rem, 5vw, 3.4rem);
+}
+
+@media (max-width: 640px) {
+  .settings > li {
+    grid-template-columns: 1fr;
+    gap: 0.1rem;
   }
 }

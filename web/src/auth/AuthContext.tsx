@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useLayoutEffect, useMemo, useState, type ReactNode } from 'react';
 import { api, setAuthHandlers } from '../api/client';
 import type { LoginResponse, StaffRole, StaffUser } from '../api/types';
 
@@ -40,7 +40,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }, []);
 
-  useEffect(() => {
+  // A layout effect on purpose: React runs children's ordinary effects (where every screen starts loading its data)
+  // before this component's own ordinary effects, so a plain useEffect would let the first request of a freshly
+  // loaded page leave without the token, come back 401, and be mistaken for an expired session.
+  useLayoutEffect(() => {
     setAuthHandlers({
       getToken: () => sessionStorage.getItem(TOKEN_KEY),
       onUnauthorized: () => {

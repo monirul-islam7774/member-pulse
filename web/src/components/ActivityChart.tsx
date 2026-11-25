@@ -107,7 +107,7 @@ export function ActivityChart({ daily, from, to, label = 'Messages per day' }: P
               {SERIES.map((s) => (
                 <Line
                   key={s.key}
-                  type="monotone"
+                  type="linear" /* straight segments: a smooth curve would invent values between days */
                   dataKey={s.key}
                   name={s.name}
                   stroke={s.color}
