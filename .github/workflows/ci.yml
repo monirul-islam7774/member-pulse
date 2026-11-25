@@ -18,6 +18,23 @@ jobs:
       # Fast tests: in-memory database, fake Kafka publisher. Integration tests are skipped here.
       - run: dotnet test MemberPulse.slnx --no-build --configuration Release
 
+  # The web app: type-check and build, then its tests.
+  web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - run: npm run build
+      - run: npm test
+
   # The container image must keep building.
   docker-build:
     runs-on: ubuntu-latest

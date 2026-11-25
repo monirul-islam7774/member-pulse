@@ -89,6 +89,19 @@ public sealed class AuthController(
         return Created($"api/users/{user.Id}", new StaffUserDto(user.Id, user.Email, user.Role, user.CreatedAt));
     }
 
+    [Authorize(Policy = AuthSetup.AdminPolicy)]
+    [HttpGet("api/users")]
+    public async Task<ActionResult<IReadOnlyList<StaffUserSummaryDto>>> ListUsers(CancellationToken cancellationToken)
+    {
+        var now = time.GetUtcNow();
+        var users = await db.StaffUsers.AsNoTracking().OrderBy(u => u.Email).ToListAsync(cancellationToken);
+
+        return users
+            .Select(u => new StaffUserSummaryDto(
+                u.Id, u.Email, u.Role, u.CreatedAt, u.IsLockedOut(now), u.IsLockedOut(now) ? u.LockedUntil : null))
+            .ToList();
+    }
+
     /// <summary>Clears a lockout early (e.g. a staff member locked themselves out).</summary>
     [Authorize(Policy = AuthSetup.AdminPolicy)]
     [HttpPost("api/users/unlock")]

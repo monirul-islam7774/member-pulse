@@ -48,6 +48,26 @@ environment variables (`ConnectionStrings__MemberPulse`, `Jwt__Key`, `Kafka__Boo
 OpenAPI. It applies database migrations on startup only when `Database__MigrateOnStartup=true` (set in the compose
 file); with more than one instance, run migrations as a separate deploy step instead.
 
+### Web app
+
+The dashboard lives in `web/` (React + TypeScript + Vite). In production the API serves it, so one container and one
+address do everything: open `http://localhost:5091/` and sign in. Pages: a dashboard (conversion headline, daily chart,
+per-campaign table), members (accounts, transactions, post a transaction), segments (criteria builder), campaigns
+(create, pause, delivery log) and, for admins, staff accounts and dead-lettered events.
+
+For development, run the API (`dotnet run --project src/MemberPulse.Api`) and then:
+
+```bash
+cd web
+npm install
+npm run dev      # http://localhost:5173, forwards /api to the API on :5091
+npm test         # component and API-client tests
+npm run build    # type-check and production build into web/dist
+```
+
+Sign in with the development admin from the Authentication section. The Docker image builds the web app in its own
+stage and copies it into the API's `wwwroot`.
+
 ## API
 
 | Endpoint | Description |

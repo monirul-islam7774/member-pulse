@@ -1,6 +1,8 @@
 # Keep the build context small and stop host build output or secrets leaking into the image.
 **/bin/
 **/obj/
+**/node_modules/
+web/dist/
 .git/
 .github/
 .vs/
