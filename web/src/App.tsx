@@ -1,5 +1,6 @@
 import { Route, Routes } from 'react-router-dom';
 import { Layout } from './components/Layout';
+import { DashboardPage } from './pages/DashboardPage';
 import { LoginPage } from './pages/LoginPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 
@@ -13,7 +14,7 @@ export function AppRoutes() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route element={<Layout />}>
-        <Route index element={<Soon title="Dashboard" />} />
+        <Route index element={<DashboardPage />} />
         <Route path="members" element={<Soon title="Members" />} />
         <Route path="members/:id" element={<Soon title="Member" />} />
         <Route path="segments" element={<Soon title="Segments" />} />

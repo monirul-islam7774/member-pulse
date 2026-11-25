@@ -24,6 +24,9 @@
   --serif: 'Iowan Old Style', 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, serif;
   --sans: system-ui, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --radius: 6px;
+  /* Chart series, validated for lightness band, chroma, colour-blind separation and contrast. */
+  --series-sent: #0a7bb5;
+  --series-converted: #b36b00;
   color-scheme: light;
 }
 
@@ -47,6 +50,8 @@
     --bad-soft: #43201c;
     --warn: #e3b350;
     --warn-soft: #3a2f14;
+    --series-sent: #2f86c4;
+    --series-converted: #b98412;
     color-scheme: dark;
   }
 }
@@ -532,19 +537,89 @@ button:disabled {
   border-top: 1px solid var(--line);
 }
 
-.figures > div {
+.figures > li {
   flex: 1 1 150px;
+  display: grid;
   padding: 0.9rem 1.25rem 0.4rem 0;
 }
 
-.figures dt {
+.figure-label {
   color: var(--muted);
   font-size: 0.85rem;
 }
 
-.figures dd {
-  margin: 0.1rem 0 0;
+.figure-value {
+  margin-top: 0.1rem;
   font: 600 1.55rem/1.2 var(--serif);
+}
+
+.frame[data-stale] {
+  opacity: 0.6;
+  transition: opacity 0.15s;
+}
+
+.chart-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.legend {
+  display: flex;
+  gap: 1.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.9rem;
+}
+
+.legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.legend i {
+  width: 18px;
+  height: 3px;
+  border-radius: 2px;
+}
+
+.chart-tooltip {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.5rem 0.75rem;
+  box-shadow: 0 6px 18px -8px rgb(0 0 0 / 0.35);
+  font-size: 0.9rem;
+}
+
+.chart-tooltip p {
+  margin: 0;
+}
+
+.chart-tooltip-title {
+  color: var(--muted);
+  margin-bottom: 0.25rem !important;
+}
+
+.chart-tooltip-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.chart-tooltip-row i {
+  width: 12px;
+  height: 3px;
+  border-radius: 2px;
+}
+
+.chart-table {
+  max-height: 320px;
+  overflow-y: auto;
 }
 
 .range {
