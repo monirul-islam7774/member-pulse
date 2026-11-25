@@ -17,7 +17,16 @@ public static class MessagingSetup
                 ? ActivatorUtilities.CreateInstance<InProcessEventPublisher>(sp)
                 : ActivatorUtilities.CreateInstance<KafkaEventPublisher>(sp));
 
-        services.AddSingleton<IMessageSender, LoggingMessageSender>();
+        // Email goes out over SMTP once Email:Host is set; until then (and for SMS and push, which have no provider yet)
+        // messages are only logged. A half-set-up Email section stops the app at startup.
+        services.AddOptions<EmailOptions>().BindConfiguration(EmailOptions.SectionName).ValidateOnStart();
+        services.AddSingleton<IValidateOptions<EmailOptions>, EmailOptionsValidator>();
+        services.AddSingleton<LoggingMessageSender>();
+        services.AddSingleton<EmailMessageSender>();
+        services.AddSingleton<IMessageSender>(sp => new ChannelRoutingMessageSender(
+            sp.GetRequiredService<IOptions<EmailOptions>>(),
+            sp.GetRequiredService<EmailMessageSender>(),
+            sp.GetRequiredService<LoggingMessageSender>()));
         services.AddOptions<CampaignOptions>().BindConfiguration(CampaignOptions.SectionName);
         services.AddScoped<TriggerEngine>();
         services.AddScoped<DeliveryRetrier>();

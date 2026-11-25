@@ -41,6 +41,15 @@ services:
       retries: 12
       start_period: 15s
 
+  # Catches outgoing email so you can read what members would receive: http://localhost:8025 (the port can be
+  # changed with MAILPIT_UI_PORT; MAILPIT_SMTP_PORT moves the SMTP port if something else already uses 1025).
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: memberpulse-mailpit
+    ports:
+      - "${MAILPIT_SMTP_PORT:-1025}:1025"
+      - "${MAILPIT_UI_PORT:-8025}:8025"
+
   # The API itself. Not started by a plain `docker compose up`, so the usual dev flow (infrastructure in Docker,
   # API from your IDE) is unchanged. Run it with:  docker compose --profile app up --build
   api:
@@ -53,12 +62,21 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
+      mailpit:
+        condition: service_started
     ports:
       - "5091:8080"
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ConnectionStrings__MemberPulse: "Server=sqlserver,1433;Database=MemberPulse;User Id=sa;Password=MemberPulse_Dev123!;TrustServerCertificate=True"
       Kafka__BootstrapServers: "kafka:29092"
+      # Campaign emails go to Mailpit above. For a real server set Email__Host, Email__Port, Email__Security,
+      # Email__Username, Email__Password and Email__FromAddress instead.
+      Email__Host: "mailpit"
+      Email__Port: "1025"
+      Email__Security: "None"
+      Email__FromAddress: "noreply@memberpulse.local"
+      Email__FromName: "MemberPulse"
       # Production doesn't create the schema on its own; this opts in. Safe to leave on: it only applies what's missing.
       Database__MigrateOnStartup: "true"
       # No defaults for secrets: put these in your shell or an (untracked) .env file. See .env.example.
