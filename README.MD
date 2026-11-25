@@ -41,12 +41,25 @@ dotnet test
 | `GET /api/members/{id}` | Member with accounts |
 | `POST /api/members` | Create a member |
 | `POST /api/members/{id}/accounts` | Open an account |
+| `GET /api/accounts/{id}/transactions` | Paged transactions, newest first |
+| `GET /api/accounts/{id}/transactions/{txId}` | Single transaction |
+| `POST /api/accounts/{id}/transactions` | Post a transaction (negative = debit; overdrafts on Savings/Checking return 422) |
+| `GET/POST /api/segments`, `GET /api/segments/{id}` | List, create and read segments |
+| `GET /api/segments/{id}/members` | Members currently matching a segment |
+| `GET /api/members/{id}/segments` | Segments a member currently belongs to |
+
+### Segments
+
+A segment is a name plus criteria; a member belongs when **all** criteria hold. Criteria are
+`metric` / `operator` / `value`, where metric is one of `Age`, `TotalBalance`, `AccountCount`,
+`TransactionCount30d`, `Spend30d`, `DaysSinceJoined`. `TotalBalance`/`AccountCount` can be scoped
+with `accountType`; `Spend30d`/`TransactionCount30d` with `merchantCategory`.
 
 ## Roadmap
 
 - [x] Domain model, EF Core persistence, Members API, tests, CI
-- [ ] Transactions endpoint
-- [ ] Rule-based member segmentation
+- [x] Transactions endpoint
+- [x] Rule-based member segmentation
 - [ ] JWT authentication
 - [ ] Kafka event publishing
 - [ ] Trigger engine (BackgroundService) and campaigns

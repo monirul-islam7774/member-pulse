@@ -116,6 +116,31 @@ namespace MemberPulse.Infrastructure.Persistence.Migrations
                     b.ToTable("Members", (string)null);
                 });
 
+            modelBuilder.Entity("MemberPulse.Domain.Segmentation.Segment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("Segments", (string)null);
+                });
+
             modelBuilder.Entity("MemberPulse.Domain.Accounts.Account", b =>
                 {
                     b.HasOne("MemberPulse.Domain.Members.Member", null)
@@ -132,6 +157,54 @@ namespace MemberPulse.Infrastructure.Persistence.Migrations
                         .HasForeignKey("AccountId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("MemberPulse.Domain.Segmentation.Segment", b =>
+                {
+                    b.OwnsMany("MemberPulse.Domain.Segmentation.SegmentCriterion", "Criteria", b1 =>
+                        {
+                            b1.Property<int>("Id")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("int");
+
+                            SqlServerPropertyBuilderExtensions.UseIdentityColumn(b1.Property<int>("Id"));
+
+                            b1.Property<string>("AccountType")
+                                .HasMaxLength(30)
+                                .HasColumnType("nvarchar(30)");
+
+                            b1.Property<string>("MerchantCategory")
+                                .HasMaxLength(50)
+                                .HasColumnType("nvarchar(50)");
+
+                            b1.Property<string>("Metric")
+                                .IsRequired()
+                                .HasMaxLength(30)
+                                .HasColumnType("nvarchar(30)");
+
+                            b1.Property<string>("Operator")
+                                .IsRequired()
+                                .HasMaxLength(30)
+                                .HasColumnType("nvarchar(30)");
+
+                            b1.Property<Guid>("SegmentId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<decimal>("Value")
+                                .HasPrecision(18, 2)
+                                .HasColumnType("decimal(18,2)");
+
+                            b1.HasKey("Id");
+
+                            b1.HasIndex("SegmentId");
+
+                            b1.ToTable("SegmentCriteria", (string)null);
+
+                            b1.WithOwner()
+                                .HasForeignKey("SegmentId");
+                        });
+
+                    b.Navigation("Criteria");
                 });
 
             modelBuilder.Entity("MemberPulse.Domain.Accounts.Account", b =>
