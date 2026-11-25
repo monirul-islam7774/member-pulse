@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using MemberPulse.Api.Auth;
+using MemberPulse.Api.Messaging;
 using MemberPulse.Infrastructure;
 using MemberPulse.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -16,6 +17,7 @@ builder.Services
     .AddJsonOptions(o => o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
 builder.Services.AddJwtAuth();
+builder.Services.AddMessaging();
 builder.Services.AddProblemDetails();
 builder.Services.AddOpenApi();
 builder.Services.AddHealthChecks().AddDbContextCheck<MemberPulseDbContext>();

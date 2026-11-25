@@ -1,15 +1,18 @@
 using MemberPulse.Api.Contracts;
 using MemberPulse.Domain.Accounts;
+using MemberPulse.Domain.Events;
 using MemberPulse.Domain.Members;
+using MemberPulse.Infrastructure.Messaging;
 using MemberPulse.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace MemberPulse.Api.Controllers;
 
 [ApiController]
 [Route("api/members")]
-public sealed class MembersController(MemberPulseDbContext db, TimeProvider time) : ControllerBase
+public sealed class MembersController(MemberPulseDbContext db, TimeProvider time, IOptions<KafkaOptions> kafka) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<PagedResult<MemberSummaryDto>>> List(
@@ -85,7 +88,12 @@ public sealed class MembersController(MemberPulseDbContext db, TimeProvider time
             return NotFound();
         }
 
-        var account = member.OpenAccount(request.Type!.Value, request.InitialDeposit, time.GetUtcNow());
+        var now = time.GetUtcNow();
+        var account = member.OpenAccount(request.Type!.Value, request.InitialDeposit, now);
+        foreach (var deposit in account.Transactions)
+        {
+            db.OutboxMessages.Add(OutboxMessage.ForTransaction(kafka.Value.TransactionsTopic, TransactionPosted.From(account, deposit), now));
+        }
         await db.SaveChangesAsync(cancellationToken);
 
         return CreatedAtAction(nameof(GetById), new { id }, ToAccountDto(account));

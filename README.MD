@@ -20,7 +20,7 @@ Dependencies point inward: Api → Infrastructure → Domain.
 
 ## Tech stack
 
-C# · .NET 10 · ASP.NET Core Web API · Entity Framework Core · SQL Server · xUnit · Docker · GitHub Actions
+C# · .NET 10 · ASP.NET Core Web API · Entity Framework Core · SQL Server · Kafka · xUnit · Docker · GitHub Actions
 
 ## Getting started
 
@@ -62,6 +62,18 @@ Staff users have the role `Staff` or `Admin`; only admins can create users.
   is created at startup. Development seeds `admin@memberpulse.local` / `Admin_Dev123!`.
 - Passwords are hashed with ASP.NET Core's `PasswordHasher`. There is no lockout or rate limiting yet.
 
+### Events (Kafka)
+
+Every posted transaction (including an account's initial deposit) produces a `TransactionPosted`
+event on the `memberpulse.transactions` topic, keyed by account id so each account's events stay in order.
+
+- The event is written to an **outbox** table in the same database transaction as the posting, and a
+  background dispatcher publishes it. A Kafka outage delays events but never loses them or reorders an account's events.
+- Delivery is **at-least-once**: consumers should de-duplicate on `transactionId`.
+- Set `Kafka:BootstrapServers` (Development uses `localhost:9092`, started by `docker compose up -d`).
+  If it is empty, events are logged instead of delivered.
+- A message that keeps failing blocks the ones behind it (check `OutboxMessages.LastError`).
+
 ### Segments
 
 A segment is a name plus criteria; a member belongs when **all** criteria hold. Criteria are
@@ -75,6 +87,6 @@ with `accountType`; `Spend30d`/`TransactionCount30d` with `merchantCategory`.
 - [x] Transactions endpoint
 - [x] Rule-based member segmentation
 - [x] JWT authentication
-- [ ] Kafka event publishing
+- [x] Kafka event publishing
 - [ ] Trigger engine (BackgroundService) and campaigns
 - [ ] Conversion tracking and KPI reporting

@@ -1,11 +1,13 @@
 using System.Net.Http.Headers;
 using MemberPulse.Api.Auth;
 using MemberPulse.Domain.Staff;
+using MemberPulse.Infrastructure.Messaging;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace MemberPulse.Tests.Api;
 
@@ -17,7 +19,15 @@ public sealed class MemberPulseApiFactory : WebApplicationFactory<Program>
         builder.ConfigureAppConfiguration((_, config) => config.AddInMemoryCollection(new Dictionary<string, string?>
         {
             ["Jwt:Key"] = "test-signing-key-test-signing-key-0123456789",
+            // Tests drive the outbox themselves (see OutboxApiTests) instead of racing a background loop.
+            ["Kafka:DispatcherEnabled"] = "false",
         }));
+        builder.ConfigureServices(services =>
+        {
+            services.RemoveAll<IEventPublisher>();
+            services.AddSingleton<RecordingEventPublisher>();
+            services.AddSingleton<IEventPublisher>(sp => sp.GetRequiredService<RecordingEventPublisher>());
+        });
     }
 
     /// <summary>Client already signed in as a staff user with the given role.</summary>
@@ -43,5 +53,26 @@ public sealed class MemberPulseApiFactory : WebApplicationFactory<Program>
         db.StaffUsers.Add(user);
         await db.SaveChangesAsync();
         return user;
+    }
+}
+
+public sealed class RecordingEventPublisher : IEventPublisher
+{
+    private readonly object _gate = new();
+    private readonly List<(string Topic, string Key, string Type, string Payload)> _published = [];
+
+    /// <summary>When set, publishing throws, to simulate Kafka being down.</summary>
+    public volatile bool Fail;
+
+    public IReadOnlyList<(string Topic, string Key, string Type, string Payload)> Published
+    {
+        get { lock (_gate) return _published.ToList(); }
+    }
+
+    public Task PublishAsync(string topic, string key, string eventType, string payload, CancellationToken cancellationToken)
+    {
+        if (Fail) throw new InvalidOperationException("broker unavailable");
+        lock (_gate) _published.Add((topic, key, eventType, payload));
+        return Task.CompletedTask;
     }
 }
