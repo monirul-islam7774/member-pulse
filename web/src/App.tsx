@@ -5,6 +5,7 @@ import { LoginPage } from './pages/LoginPage';
 import { MemberDetailPage } from './pages/MemberDetailPage';
 import { MembersPage } from './pages/MembersPage';
 import { NotFoundPage } from './pages/NotFoundPage';
+import { SegmentsPage } from './pages/SegmentsPage';
 
 // Screens arrive task by task; until then their routes show a stand-in.
 function Soon({ title }: { title: string }) {
@@ -19,7 +20,7 @@ export function AppRoutes() {
         <Route index element={<DashboardPage />} />
         <Route path="members" element={<MembersPage />} />
         <Route path="members/:id" element={<MemberDetailPage />} />
-        <Route path="segments" element={<Soon title="Segments" />} />
+        <Route path="segments" element={<SegmentsPage />} />
         <Route path="campaigns" element={<Soon title="Campaigns" />} />
         <Route path="campaigns/:id" element={<Soon title="Campaign" />} />
         <Route path="admin" element={<Soon title="Admin" />} />
