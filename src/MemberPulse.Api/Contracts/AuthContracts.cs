@@ -33,3 +33,6 @@ public sealed class UnlockUserRequest
 }
 
 public sealed record StaffUserDto(Guid Id, string Email, StaffRole Role, DateTimeOffset CreatedAt);
+
+public sealed record StaffUserSummaryDto(
+    Guid Id, string Email, StaffRole Role, DateTimeOffset CreatedAt, bool IsLockedOut, DateTimeOffset? LockedUntil);

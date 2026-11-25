@@ -63,6 +63,29 @@ public sealed class ReportsController(MemberPulseDbContext db, TimeProvider time
         return new CampaignReportDto(start, end, totals, campaigns);
     }
 
+    /// <summary>Messages sent and converted per UTC day across all campaigns, for the dashboard chart.</summary>
+    [HttpGet("daily")]
+    public async Task<ActionResult<DailyOverviewDto>> DailyOverview(
+        [FromQuery] DateTimeOffset? from, [FromQuery] DateTimeOffset? to, CancellationToken cancellationToken)
+    {
+        if (!TryResolveRange(from, to, out var start, out var end, out var problem))
+        {
+            return problem!;
+        }
+
+        var rows = await InRange(start, end)
+            .Select(d => new { d.Status, d.CreatedAt, d.ConvertedAt })
+            .ToListAsync(cancellationToken);
+
+        var daily = rows
+            .GroupBy(r => DateOnly.FromDateTime(r.CreatedAt.UtcDateTime))
+            .OrderBy(g => g.Key)
+            .Select(g => new DailyKpiDto(g.Key, g.Count(r => r.Status == DeliveryStatus.Sent), g.Count(r => r.ConvertedAt != null)))
+            .ToList();
+
+        return new DailyOverviewDto(start, end, daily);
+    }
+
     /// <summary>One campaign's KPIs plus a per-day series (days in UTC, by when the message was sent).</summary>
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<CampaignDetailReportDto>> Detail(

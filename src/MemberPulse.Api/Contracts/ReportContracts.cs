@@ -24,6 +24,9 @@ public sealed record CampaignReportDto(
 
 public sealed record DailyKpiDto(DateOnly Date, int Sent, int Converted);
 
+/// <summary>Messages sent (and how many of them converted) per UTC day across every campaign.</summary>
+public sealed record DailyOverviewDto(DateTimeOffset From, DateTimeOffset To, IReadOnlyList<DailyKpiDto> Daily);
+
 public sealed record CampaignDetailReportDto(
     DateTimeOffset From,
     DateTimeOffset To,
