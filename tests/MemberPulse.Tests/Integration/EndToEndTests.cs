@@ -98,10 +98,10 @@ public class EndToEndTests : IClassFixture<RealInfrastructureFactory>
         await OkAsync<TransactionDto>(await client.PostAsJsonAsync($"/api/accounts/{account.Id}/transactions",
             new { amount = -45.5, description = "Dinner", merchantCategory = "Dining" }), HttpStatusCode.Created);
 
+        // The delivery is recorded as Pending just before the message goes out, so wait for Sent specifically.
         var delivery = await EventuallyAsync("the campaign message to be sent", async () =>
             (await client.GetFromJsonAsync<PagedResult<DeliveryDto>>($"/api/campaigns/{campaign.Id}/deliveries", Json))!.Items
-                .FirstOrDefault());
-        Assert.Equal(DeliveryStatus.Sent, delivery.Status);
+                .FirstOrDefault(d => d.Status == DeliveryStatus.Sent));
         Assert.Equal("Hi Real, $45.50 on Dining?", delivery.Message);
         Assert.Null(delivery.ConvertedAt);
 

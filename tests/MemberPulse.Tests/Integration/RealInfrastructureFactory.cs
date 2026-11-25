@@ -47,6 +47,7 @@ public class RealInfrastructureFactory : WebApplicationFactory<Program>
         {
             try
             {
+                SqlConnection.ClearAllPools(); // otherwise pooled connections try to reopen the database we are dropping
                 using var master = new SqlConnection(_server + ";Database=master");
                 master.Open();
                 using var drop = master.CreateCommand();
