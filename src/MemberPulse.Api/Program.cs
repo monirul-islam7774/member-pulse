@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using MemberPulse.Api.Auth;
+using MemberPulse.Api.Hosting;
 using MemberPulse.Api.Messaging;
 using MemberPulse.Infrastructure;
 using MemberPulse.Infrastructure.Persistence;
@@ -52,6 +53,8 @@ await app.Services.BootstrapAdminAsync();
 // 3. HTTP pipeline (middleware, runs in this order)
 app.UseExceptionHandler();
 app.UseStatusCodePages();
+app.UseSpaStaticFiles(); // before auth: anonymous visitors must be able to load the page with the login form
+app.UseRouting();        // explicitly, after static files: otherwise the SPA fallback matches /app.js and files are never served
 
 app.UseRateLimiter();
 app.UseAuthentication();
@@ -59,6 +62,7 @@ app.UseAuthorization();
 
 app.MapControllers();
 app.MapHealthChecks("/health").AllowAnonymous();
+app.MapSpaFallback();
 
 app.Run();
 
