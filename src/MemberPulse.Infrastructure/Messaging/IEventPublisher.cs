@@ -10,16 +10,6 @@ public interface IEventPublisher
     Task PublishAsync(string topic, string key, string eventType, string payload, CancellationToken cancellationToken);
 }
 
-/// <summary>Used when no Kafka brokers are configured: logs the event so local development still works.</summary>
-public sealed class LoggingEventPublisher(ILogger<LoggingEventPublisher> logger) : IEventPublisher
-{
-    public Task PublishAsync(string topic, string key, string eventType, string payload, CancellationToken cancellationToken)
-    {
-        logger.LogInformation("Kafka not configured; event {EventType} for {Key} on {Topic}: {Payload}", eventType, key, topic, payload);
-        return Task.CompletedTask;
-    }
-}
-
 public sealed class KafkaEventPublisher : IEventPublisher, IDisposable
 {
     private readonly IProducer<string, string> _producer;

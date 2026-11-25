@@ -74,7 +74,7 @@ public sealed class SegmentsController(MemberPulseDbContext db, TimeProvider tim
 
         // Evaluated in memory against each member's recent activity. Fine for a modest member base;
         // revisit with precomputed metrics if membership grows large.
-        var matching = (await MembersWithRecentActivity(now).ToListAsync(cancellationToken))
+        var matching = (await db.WithRecentActivity(now).ToListAsync(cancellationToken))
             .Where(m => segment.Matches(m, now))
             .OrderBy(m => m.LastName).ThenBy(m => m.FirstName)
             .ToList();
@@ -92,7 +92,7 @@ public sealed class SegmentsController(MemberPulseDbContext db, TimeProvider tim
     public async Task<ActionResult<IReadOnlyList<SegmentDto>>> ForMember(Guid memberId, CancellationToken cancellationToken)
     {
         var now = time.GetUtcNow();
-        var member = await MembersWithRecentActivity(now).FirstOrDefaultAsync(m => m.Id == memberId, cancellationToken);
+        var member = await db.WithRecentActivity(now).FirstOrDefaultAsync(m => m.Id == memberId, cancellationToken);
         if (member is null)
         {
             return NotFound();
@@ -100,15 +100,6 @@ public sealed class SegmentsController(MemberPulseDbContext db, TimeProvider tim
 
         var segments = await db.Segments.AsNoTracking().OrderBy(s => s.Name).ToListAsync(cancellationToken);
         return segments.Where(s => s.Matches(member, now)).Select(ToDto).ToList();
-    }
-
-    private IQueryable<Member> MembersWithRecentActivity(DateTimeOffset now)
-    {
-        var cutoff = now.AddDays(-SegmentCriterion.WindowDays);
-        return db.Members
-            .AsNoTracking()
-            .Include(m => m.Accounts)
-            .ThenInclude(a => a.Transactions.Where(t => t.OccurredAt > cutoff));
     }
 
     private static SegmentDto ToDto(Segment s) => new(

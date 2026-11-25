@@ -50,6 +50,9 @@ dotnet test
 | `GET/POST /api/segments`, `GET /api/segments/{id}` | List, create and read segments |
 | `GET /api/segments/{id}/members` | Members currently matching a segment |
 | `GET /api/members/{id}/segments` | Segments a member currently belongs to |
+| `GET/POST /api/campaigns`, `GET /api/campaigns/{id}` | List, create and read campaigns |
+| `POST /api/campaigns/{id}/pause`, `.../resume` | Stop or restart a campaign |
+| `GET /api/campaigns/{id}/deliveries` | Messages the campaign has triggered |
 
 ### Authentication
 
@@ -71,8 +74,23 @@ event on the `memberpulse.transactions` topic, keyed by account id so each accou
   background dispatcher publishes it. A Kafka outage delays events but never loses them or reorders an account's events.
 - Delivery is **at-least-once**: consumers should de-duplicate on `transactionId`.
 - Set `Kafka:BootstrapServers` (Development uses `localhost:9092`, started by `docker compose up -d`).
-  If it is empty, events are logged instead of delivered.
+  If it is empty, events are handed straight to the trigger engine in-process, so campaigns still work.
 - A message that keeps failing blocks the ones behind it (check `OutboxMessages.LastError`).
+
+### Campaigns and the trigger engine
+
+A campaign targets a **segment** and reacts to posted transactions. Optional filters narrow which
+transactions count: `direction` (`Any`/`Debit`/`Credit`), `minAmount` (absolute value) and `merchantCategory`.
+The `messageTemplate` can use `{FirstName}`, `{Amount}` and `{MerchantCategory}`, and `cooldownDays`
+limits how often one member hears from the same campaign.
+
+For every `TransactionPosted` event the engine finds the active campaigns that apply, checks the member is
+in the campaign's segment *at that moment*, then records a delivery and sends the message.
+
+- Each transaction triggers a given campaign at most once, so replayed Kafka events are harmless.
+- With Kafka configured a consumer (group `memberpulse-triggers`) feeds the engine; otherwise the in-process publisher does.
+- Messages go through `IMessageSender`. The default only **logs** them; plug in an email/SMS/push provider there.
+- A failed send is recorded as `Failed` and is not retried automatically.
 
 ### Segments
 
@@ -88,5 +106,5 @@ with `accountType`; `Spend30d`/`TransactionCount30d` with `merchantCategory`.
 - [x] Rule-based member segmentation
 - [x] JWT authentication
 - [x] Kafka event publishing
-- [ ] Trigger engine (BackgroundService) and campaigns
+- [x] Trigger engine (BackgroundService) and campaigns
 - [ ] Conversion tracking and KPI reporting

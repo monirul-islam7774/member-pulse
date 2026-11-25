@@ -1,4 +1,5 @@
 using MemberPulse.Domain.Accounts;
+using MemberPulse.Domain.Campaigns;
 using MemberPulse.Domain.Members;
 using MemberPulse.Domain.Segmentation;
 using MemberPulse.Domain.Staff;
@@ -15,6 +16,8 @@ public sealed class MemberPulseDbContext(DbContextOptions<MemberPulseDbContext> 
     public DbSet<Segment> Segments => Set<Segment>();
     public DbSet<StaffUser> StaffUsers => Set<StaffUser>();
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
+    public DbSet<Campaign> Campaigns => Set<Campaign>();
+    public DbSet<CampaignDelivery> CampaignDeliveries => Set<CampaignDelivery>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

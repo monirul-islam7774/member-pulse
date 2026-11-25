@@ -1,3 +1,4 @@
+using MemberPulse.Infrastructure.Campaigns;
 using MemberPulse.Infrastructure.Messaging;
 using Microsoft.Extensions.Options;
 
@@ -9,12 +10,16 @@ public static class MessagingSetup
     {
         services.AddOptions<KafkaOptions>().BindConfiguration(KafkaOptions.SectionName);
 
-        // Real Kafka when brokers are configured, otherwise log-only. Chosen on first use so
+        // Real Kafka when brokers are configured, otherwise in-process. Chosen on first use so
         // configuration from any source (user-secrets, env, tests) is honoured.
         services.AddSingleton<IEventPublisher>(sp =>
             string.IsNullOrWhiteSpace(sp.GetRequiredService<IOptions<KafkaOptions>>().Value.BootstrapServers)
-                ? ActivatorUtilities.CreateInstance<LoggingEventPublisher>(sp)
+                ? ActivatorUtilities.CreateInstance<InProcessEventPublisher>(sp)
                 : ActivatorUtilities.CreateInstance<KafkaEventPublisher>(sp));
+
+        services.AddSingleton<IMessageSender, LoggingMessageSender>();
+        services.AddScoped<TriggerEngine>();
+        services.AddHostedService<TransactionEventConsumer>();
 
         services.AddScoped<OutboxProcessor>();
         services.AddHostedService<OutboxDispatcher>();
