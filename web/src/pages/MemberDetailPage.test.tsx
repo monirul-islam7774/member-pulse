@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { Link, MemoryRouter, Route, Routes } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
 import type { MemberDetail, Paged, Segment, Transaction } from '../api/types';
 import { json, mockApi, problem } from '../test/http';
@@ -189,5 +189,34 @@ describe('MemberDetailPage', () => {
     renderPage();
 
     expect(await screen.findByRole('heading', { name: /member not found/i })).toBeInTheDocument();
+  });
+
+  it('switching_to_another_member_never_shows_the_previous_members_data_or_forms', async () => {
+    let releaseSecond: (r: Response) => void = () => {};
+    const second: MemberDetail = { ...member, id: 'm2', firstName: 'Zara', lastName: 'Ahmed', accounts: [] };
+    mockApi({
+      ...base,
+      'GET /api/members/m2': () => new Promise<Response>((resolve) => { releaseSecond = resolve; }),
+      'GET /api/members/m2/segments': json([]),
+    });
+    render(
+      <MemoryRouter initialEntries={['/members/m1']}>
+        <Link to="/members/m2">other member</Link>
+        <Routes>
+          <Route path="/members/:id" element={<MemberDetailPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    await screen.findByRole('heading', { name: 'Aisha Rahman' });
+
+    await userEvent.setup().click(screen.getByRole('link', { name: 'other member' }));
+
+    // while the second member loads, nothing of the first one (above all, its forms) may remain
+    expect(screen.queryByRole('heading', { name: 'Aisha Rahman' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('form', { name: /post transaction/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent(/loading member/i);
+
+    releaseSecond(json(second));
+    expect(await screen.findByRole('heading', { name: 'Zara Ahmed' })).toBeInTheDocument();
   });
 });

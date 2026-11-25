@@ -206,7 +206,8 @@ export function CampaignsPage() {
   const [actionError, setActionError] = useState<unknown>(null);
 
   // Blank while the segments load, so a real segment never flashes as "Unknown".
-  const segmentName = (id: string) => (segments.data ? (segments.data.find((s) => s.id === id)?.name ?? 'Unknown segment') : '');
+  const segmentName = (id: string) =>
+    segments.error ? 'Unavailable' : segments.data ? (segments.data.find((s) => s.id === id)?.name ?? 'Unknown segment') : '';
 
   async function toggle(c: Campaign) {
     setActionError(null);
@@ -228,15 +229,20 @@ export function CampaignsPage() {
           New campaign
         </button>
       </div>
-      {showForm && (
-        <NewCampaignForm
-          segments={segments.data ?? []}
-          onCreated={() => {
-            setShowForm(false);
-            campaigns.reload();
-          }}
-        />
-      )}
+      {showForm &&
+        (segments.error ? (
+          <ErrorState error={segments.error} onRetry={segments.reload} />
+        ) : !segments.data ? (
+          <Loading label="Loading segments" />
+        ) : (
+          <NewCampaignForm
+            segments={segments.data}
+            onCreated={() => {
+              setShowForm(false);
+              campaigns.reload();
+            }}
+          />
+        ))}
       {actionError != null && <FormError error={actionError} />}
 
       {campaigns.error ? (

@@ -10,6 +10,13 @@ public static class SpaHosting
     private const string ServerPaths = "api|health|openapi";
 
     /// <summary>
+    /// The page must be re-checked on every visit. It names the hashed asset files of one particular build; a browser
+    /// holding an old copy after a deploy would ask for files that no longer exist and show a blank page.
+    /// (no-cache still lets the browser reuse its copy when the ETag says nothing changed.)
+    /// </summary>
+    private const string RevalidateAlways = "no-cache";
+
+    /// <summary>
     /// Serves index.html for / and the files in wwwroot. Call this BEFORE authentication (the app requires a login for
     /// anything unmatched, which would otherwise lock anonymous visitors out of the page that contains the login form)
     /// and BEFORE <c>UseRouting()</c> (static files are skipped for requests that already matched an endpoint, and the
@@ -18,7 +25,22 @@ public static class SpaHosting
     public static WebApplication UseSpaStaticFiles(this WebApplication app)
     {
         app.UseDefaultFiles();
-        app.UseStaticFiles();
+        app.UseStaticFiles(new StaticFileOptions
+        {
+            OnPrepareResponse = context =>
+            {
+                var headers = context.Context.Response.Headers;
+                if (context.File.Name.Equals("index.html", StringComparison.OrdinalIgnoreCase))
+                {
+                    headers.CacheControl = RevalidateAlways;
+                }
+                else if (context.Context.Request.Path.StartsWithSegments("/assets"))
+                {
+                    // The build puts a hash of the content in these file names, so a changed file has a new name.
+                    headers.CacheControl = "public, max-age=31536000, immutable";
+                }
+            },
+        });
         return app;
     }
 
@@ -37,7 +59,13 @@ public static class SpaHosting
                 }
 
                 var index = env.WebRootFileProvider.GetFileInfo("index.html");
-                return index.Exists ? Results.File(index.CreateReadStream(), "text/html") : Results.NotFound();
+                if (!index.Exists)
+                {
+                    return Results.NotFound();
+                }
+
+                context.Response.Headers.CacheControl = RevalidateAlways;
+                return Results.File(index.CreateReadStream(), "text/html");
             })
             .AllowAnonymous();
 

@@ -245,8 +245,13 @@ function MemberView({ member, onChanged }: { member: MemberDetail; onChanged: ()
   );
 }
 
+/** Keyed by id: a different member is a fresh page, so the previous member's data and forms can never linger under the new URL. */
 export function MemberDetailPage() {
   const { id = '' } = useParams();
+  return <MemberDetailLoader key={id} id={id} />;
+}
+
+function MemberDetailLoader({ id }: { id: string }) {
   const member = useAsync(() => getMember(id), [id]);
 
   if (member.error instanceof ApiError && member.error.status === 404) {

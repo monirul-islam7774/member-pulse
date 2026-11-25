@@ -1,4 +1,4 @@
-import { NavLink, Navigate, Outlet } from 'react-router-dom';
+import { NavLink, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 
 const links = [
@@ -10,8 +10,11 @@ const links = [
 
 /** The signed-in frame: navigation on the left, who you are and sign-out on top. Signed-out visitors are sent to sign-in. */
 export function Layout() {
-  const { user, signOut } = useAuth();
-  if (!user) return <Navigate to="/login" replace />;
+  const { user, signOut, signedOutByUser } = useAuth();
+  const location = useLocation();
+  // Remember where the visitor was going, so signing in (also after an expired session) brings them back to it.
+  // Someone who just chose to sign out was going nowhere.
+  if (!user) return <Navigate to="/login" replace state={signedOutByUser ? undefined : { from: location }} />;
 
   return (
     <div className="app">

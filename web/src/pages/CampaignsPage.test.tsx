@@ -219,4 +219,47 @@ describe('CampaignsPage', () => {
     expect(await screen.findByText('<img src=x onerror=alert(1)>')).toBeInTheDocument();
     expect(document.querySelector('img')).toBeNull();
   });
+
+  it('shows_a_retry_in_the_form_when_the_segments_fail_to_load_instead_of_asking_for_a_segment', async () => {
+    let attempt = 0;
+    mockApi({
+      'GET /api/campaigns': json([travel]),
+      'GET /api/segments': () => (++attempt === 1 ? problem(500, 'Boom', 'Segments are unavailable.') : json([whales])),
+    });
+    renderPage();
+    const user = userEvent.setup();
+    const row = (await screen.findByRole('link', { name: 'Travel push' })).closest('tr')!;
+    await waitFor(() => expect(row).toHaveTextContent('Unavailable')); // not a blank cell
+
+    await user.click(screen.getByRole('button', { name: /new campaign/i }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Segments are unavailable.');
+    expect(screen.queryByText(/create a segment/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('form', { name: /new campaign/i })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /try again/i }));
+
+    expect(await screen.findByRole('form', { name: /new campaign/i })).toBeInTheDocument();
+    expect(row).toHaveTextContent('Whales');
+  });
+
+  it('does_not_claim_there_are_no_segments_while_they_are_still_loading', async () => {
+    let release: (r: Response) => void = () => {};
+    mockApi({
+      'GET /api/campaigns': json([]),
+      'GET /api/segments': () => new Promise<Response>((resolve) => { release = resolve; }),
+    });
+    renderPage();
+    const user = userEvent.setup();
+    await screen.findByText(/no campaigns yet/i);
+
+    await user.click(screen.getByRole('button', { name: /new campaign/i }));
+
+    expect(screen.getByRole('status')).toHaveTextContent(/loading segments/i);
+    expect(screen.queryByText(/create a segment/i)).not.toBeInTheDocument();
+
+    release(json([whales]));
+    expect(await screen.findByRole('form', { name: /new campaign/i })).toBeInTheDocument();
+    expect(screen.queryByText(/create a segment/i)).not.toBeInTheDocument();
+  });
 });

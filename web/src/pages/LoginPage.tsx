@@ -1,7 +1,8 @@
 import { useState, type FormEvent } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { ApiError } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
+import { returnPathFrom } from '../auth/returnPath';
 
 function describeSignInError(error: unknown): string {
   if (error instanceof ApiError) {
@@ -14,12 +15,13 @@ function describeSignInError(error: unknown): string {
 
 export function LoginPage() {
   const { user, signIn, sessionExpired } = useAuth();
+  const location = useLocation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  if (user) return <Navigate to="/" replace />;
+  if (user) return <Navigate to={returnPathFrom(location.state)} replace />;
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
@@ -41,7 +43,7 @@ export function LoginPage() {
 
         {sessionExpired && (
           <p role="status" className="notice">
-            Your session expired. Sign in again to continue.
+            Your session expired. Sign in again to continue. Changes you hadn't submitted weren't saved.
           </p>
         )}
 

@@ -15,6 +15,8 @@ interface AuthValue {
   user: SessionUser | null;
   /** True after the API rejected our token (it lasts 60 minutes), until the next successful sign-in. */
   sessionExpired: boolean;
+  /** True after the user chose to sign out (until they sign in again): there is no page to bring them back to. */
+  signedOutByUser: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => void;
 }
@@ -33,6 +35,7 @@ function readUser(): SessionUser | null {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<SessionUser | null>(readUser);
   const [sessionExpired, setSessionExpired] = useState(() => sessionStorage.getItem(EXPIRED_KEY) === '1');
+  const [signedOutByUser, setSignedOutByUser] = useState(false);
 
   const clearSession = useCallback(() => {
     sessionStorage.removeItem(TOKEN_KEY);
@@ -66,6 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         sessionStorage.setItem(USER_KEY, JSON.stringify(next));
         sessionStorage.removeItem(EXPIRED_KEY);
         setSessionExpired(false);
+        setSignedOutByUser(false);
         setUser(next);
       } catch (error) {
         clearSession();
@@ -78,10 +82,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = useCallback(() => {
     sessionStorage.removeItem(EXPIRED_KEY);
     setSessionExpired(false);
+    setSignedOutByUser(true);
     clearSession();
   }, [clearSession]);
 
-  const value = useMemo(() => ({ user, sessionExpired, signIn, signOut }), [user, sessionExpired, signIn, signOut]);
+  const value = useMemo(
+    () => ({ user, sessionExpired, signedOutByUser, signIn, signOut }),
+    [user, sessionExpired, signedOutByUser, signIn, signOut],
+  );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
