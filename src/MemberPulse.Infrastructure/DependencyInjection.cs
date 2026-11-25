@@ -9,7 +9,6 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(
         this IServiceCollection services,
-        IConfiguration configuration,
         bool useInMemoryDatabase = false)
     {
         if (useInMemoryDatabase)
@@ -19,10 +18,15 @@ public static class DependencyInjection
         }
         else
         {
-            var connectionString = configuration.GetConnectionString("MemberPulse")
-                ?? throw new InvalidOperationException("Connection string 'MemberPulse' is not configured.");
+            // Resolved when the context is first built, so configuration added after startup
+            // (user-secrets, environment, test overrides) is honoured.
+            services.AddDbContext<MemberPulseDbContext>((sp, options) =>
+            {
+                var connectionString = sp.GetRequiredService<IConfiguration>().GetConnectionString("MemberPulse")
+                    ?? throw new InvalidOperationException("Connection string 'MemberPulse' is not configured.");
 
-            services.AddDbContext<MemberPulseDbContext>(o => o.UseSqlServer(connectionString));
+                options.UseSqlServer(connectionString);
+            });
         }
 
         return services;

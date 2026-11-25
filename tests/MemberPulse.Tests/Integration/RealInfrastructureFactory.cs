@@ -1,10 +1,7 @@
-using MemberPulse.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Data.SqlClient;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace MemberPulse.Tests.Integration;
 
@@ -22,6 +19,7 @@ public sealed class RealInfrastructureFactory : WebApplicationFactory<Program>
     {
         var server = Environment.GetEnvironmentVariable("MEMBERPULSE_IT_SQL")
             ?? "Server=localhost,1433;User Id=sa;Password=MemberPulse_Dev123!;TrustServerCertificate=True";
+        _server = server;
         var kafka = Environment.GetEnvironmentVariable("MEMBERPULSE_IT_KAFKA") ?? "localhost:9092";
 
         builder.UseEnvironment("Development"); // migrates, seeds, bootstraps the admin from appsettings.Development.json
@@ -35,21 +33,28 @@ public sealed class RealInfrastructureFactory : WebApplicationFactory<Program>
         }));
     }
 
+    private string _server = string.Empty;
+
     protected override void Dispose(bool disposing)
     {
-        if (disposing)
+        base.Dispose(disposing); // stop the host first so nothing is still connected
+
+        if (disposing && _server.Length > 0)
         {
             try
             {
-                using var scope = Services.CreateScope();
-                scope.ServiceProvider.GetRequiredService<MemberPulseDbContext>().Database.EnsureDeleted();
+                using var master = new SqlConnection(_server + ";Database=master");
+                master.Open();
+                using var drop = master.CreateCommand();
+                drop.CommandText = $"IF DB_ID('{DatabaseName}') IS NOT NULL BEGIN " +
+                                   $"ALTER DATABASE [{DatabaseName}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE; " +
+                                   $"DROP DATABASE [{DatabaseName}]; END";
+                drop.ExecuteNonQuery();
             }
-            catch (Exception ex) when (ex is SqlException or InvalidOperationException or ObjectDisposedException)
+            catch (SqlException)
             {
                 // best effort: the throwaway database is harmless if it lingers
             }
         }
-
-        base.Dispose(disposing);
     }
 }

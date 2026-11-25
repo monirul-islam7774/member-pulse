@@ -9,7 +9,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // 1. Register services (the DI container)
 var isTesting = builder.Environment.IsEnvironment("Testing");
-builder.Services.AddInfrastructure(builder.Configuration, useInMemoryDatabase: isTesting);
+builder.Services.AddInfrastructure(useInMemoryDatabase: isTesting);
 builder.Services.AddSingleton(TimeProvider.System);
 
 builder.Services
