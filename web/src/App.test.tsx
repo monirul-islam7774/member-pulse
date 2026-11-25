@@ -64,6 +64,14 @@ describe('app shell', () => {
     expect(sessionStorage.getItem('mp.token')).toBeNull();
   });
 
+  it('keeps_staff_out_of_the_admin_page', () => {
+    signedInAs('Staff');
+
+    renderAt('/admin');
+
+    expect(screen.getByRole('heading', { name: /admins only/i })).toBeInTheDocument();
+  });
+
   it('shows_a_not_found_page_for_unknown_routes', () => {
     signedInAs('Staff');
 

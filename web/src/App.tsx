@@ -1,5 +1,7 @@
 import { Route, Routes } from 'react-router-dom';
+import { RequireAdmin } from './auth/RequireAdmin';
 import { Layout } from './components/Layout';
+import { AdminPage } from './pages/AdminPage';
 import { CampaignDetailPage } from './pages/CampaignDetailPage';
 import { CampaignsPage } from './pages/CampaignsPage';
 import { DashboardPage } from './pages/DashboardPage';
@@ -8,11 +10,6 @@ import { MemberDetailPage } from './pages/MemberDetailPage';
 import { MembersPage } from './pages/MembersPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { SegmentsPage } from './pages/SegmentsPage';
-
-// Screens arrive task by task; until then their routes show a stand-in.
-function Soon({ title }: { title: string }) {
-  return <h1 className="page-title">{title}</h1>;
-}
 
 export function AppRoutes() {
   return (
@@ -25,7 +22,14 @@ export function AppRoutes() {
         <Route path="segments" element={<SegmentsPage />} />
         <Route path="campaigns" element={<CampaignsPage />} />
         <Route path="campaigns/:id" element={<CampaignDetailPage />} />
-        <Route path="admin" element={<Soon title="Admin" />} />
+        <Route
+          path="admin"
+          element={
+            <RequireAdmin>
+              <AdminPage />
+            </RequireAdmin>
+          }
+        />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>
