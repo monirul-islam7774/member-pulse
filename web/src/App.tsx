@@ -1,5 +1,7 @@
 import { Route, Routes } from 'react-router-dom';
 import { Layout } from './components/Layout';
+import { CampaignDetailPage } from './pages/CampaignDetailPage';
+import { CampaignsPage } from './pages/CampaignsPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { LoginPage } from './pages/LoginPage';
 import { MemberDetailPage } from './pages/MemberDetailPage';
@@ -21,8 +23,8 @@ export function AppRoutes() {
         <Route path="members" element={<MembersPage />} />
         <Route path="members/:id" element={<MemberDetailPage />} />
         <Route path="segments" element={<SegmentsPage />} />
-        <Route path="campaigns" element={<Soon title="Campaigns" />} />
-        <Route path="campaigns/:id" element={<Soon title="Campaign" />} />
+        <Route path="campaigns" element={<CampaignsPage />} />
+        <Route path="campaigns/:id" element={<CampaignDetailPage />} />
         <Route path="admin" element={<Soon title="Admin" />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>

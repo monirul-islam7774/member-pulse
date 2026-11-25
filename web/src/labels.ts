@@ -1,4 +1,12 @@
-import type { AccountType, ComparisonOperator, Criterion, MemberMetric } from './api/types';
+import type {
+  AccountType,
+  CampaignChannel,
+  ComparisonOperator,
+  ConversionGoal,
+  Criterion,
+  MemberMetric,
+  TransactionDirection,
+} from './api/types';
 import { formatCurrency, formatNumber } from './format';
 
 /** Words people use for the API's enum values. */
@@ -47,6 +55,40 @@ export const operatorWords: Record<ComparisonOperator, string> = {
 };
 
 export const operators = Object.keys(operatorWords) as ComparisonOperator[];
+
+export const channelLabels: Record<CampaignChannel, string> = { Email: 'Email', Sms: 'SMS', Push: 'Push notification' };
+export const channels = Object.keys(channelLabels) as CampaignChannel[];
+
+/** Option text for choosing which kind of transaction a rule looks at. */
+export const directionLabels: Record<TransactionDirection, string> = {
+  Debit: 'A purchase (money out)',
+  Credit: 'A deposit (money in)',
+  Any: 'Any transaction',
+};
+export const directions = Object.keys(directionLabels) as TransactionDirection[];
+
+const directionNouns: Record<TransactionDirection, string> = { Debit: 'purchase', Credit: 'deposit', Any: 'transaction' };
+
+function money(value: number): string {
+  return Number.isInteger(value) ? `$${formatNumber(value)}` : formatCurrency(value);
+}
+
+/** "Any purchase", "A purchase of at least $100 in Dining" */
+export function describeTrigger(f: { direction: TransactionDirection; minAmount: number | null; merchantCategory: string | null }): string {
+  const noun = directionNouns[f.direction];
+  if (f.minAmount === null && !f.merchantCategory) return `Any ${noun}`;
+  return `A ${noun}${f.minAmount !== null ? ` of at least ${money(f.minAmount)}` : ''}${f.merchantCategory ? ` in ${f.merchantCategory}` : ''}`;
+}
+
+/** "A purchase in Travel within 14 days" */
+export function describeConversion(goal: ConversionGoal): string {
+  return `${describeTrigger(goal)} within ${goal.windowDays} ${goal.windowDays === 1 ? 'day' : 'days'}`;
+}
+
+export function describeCooldown(days: number): string {
+  if (days <= 0) return 'No limit on how often a member is messaged';
+  return days === 1 ? 'At most one message a day per member' : `At most one message every ${days} days per member`;
+}
 
 /** "Total balance ≥ $500,000 in Savings" */
 export function describeCriterion(c: Criterion): string {

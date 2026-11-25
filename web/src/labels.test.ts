@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Criterion } from './api/types';
-import { describeCriterion } from './labels';
+import type { ConversionGoal } from './api/types';
+import { describeConversion, describeCooldown, describeCriterion, describeTrigger } from './labels';
 
 const c = (over: Partial<Criterion>): Criterion => ({
   metric: 'Age', operator: 'GreaterThan', value: 0, accountType: null, merchantCategory: null, ...over,
@@ -27,5 +28,29 @@ describe('describeCriterion', () => {
 
   it('keeps_cents_when_the_amount_has_them', () => {
     expect(describeCriterion(c({ metric: 'TotalBalance', operator: 'LessThan', value: 99.5 }))).toBe('Total balance < $99.50');
+  });
+});
+
+describe('campaign wording', () => {
+  it('describes_what_triggers_a_message', () => {
+    expect(describeTrigger({ direction: 'Any', minAmount: null, merchantCategory: null })).toBe('Any transaction');
+    expect(describeTrigger({ direction: 'Debit', minAmount: null, merchantCategory: null })).toBe('Any purchase');
+    expect(describeTrigger({ direction: 'Debit', minAmount: 100, merchantCategory: 'Dining' })).toBe('A purchase of at least $100 in Dining');
+    expect(describeTrigger({ direction: 'Credit', minAmount: 2500.5, merchantCategory: null })).toBe('A deposit of at least $2,500.50');
+  });
+
+  it('describes_the_conversion_goal_with_its_window', () => {
+    const goal = (over: Partial<ConversionGoal>): ConversionGoal => ({ windowDays: 7, direction: 'Debit', minAmount: null, merchantCategory: null, ...over });
+
+    expect(describeConversion(goal({}))).toBe('Any purchase within 7 days');
+    expect(describeConversion(goal({ windowDays: 1 }))).toBe('Any purchase within 1 day');
+    expect(describeConversion(goal({ windowDays: 14, minAmount: 250, merchantCategory: 'Travel' })))
+      .toBe('A purchase of at least $250 in Travel within 14 days');
+  });
+
+  it('describes_the_cooldown', () => {
+    expect(describeCooldown(0)).toBe('No limit on how often a member is messaged');
+    expect(describeCooldown(1)).toBe('At most one message a day per member');
+    expect(describeCooldown(30)).toBe('At most one message every 30 days per member');
   });
 });

@@ -1,36 +1,13 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getDailyOverview, getOverview } from '../api/reports';
-import type { Kpi } from '../api/types';
 import { ActivityChart } from '../components/ActivityChart';
+import { Figures } from '../components/Figures';
 import { EmptyState, ErrorState, Loading } from '../components/States';
 import { formatCurrency, formatNumber, formatPercent } from '../format';
 import { useAsync } from '../useAsync';
 
 const RANGES = [7, 30, 90];
-
-function Figures({ totals }: { totals: Kpi }) {
-  const items: [string, string][] = [
-    ['Messages sent', formatNumber(totals.sent)],
-    ['Converted', formatNumber(totals.converted)],
-    ['Members reached', formatNumber(totals.membersReached)],
-    ['Converted amount', formatCurrency(totals.convertedAmount)],
-  ];
-  // Problems only appear when there is something to look at.
-  if (totals.pending > 0) items.push(['Pending', formatNumber(totals.pending)]);
-  if (totals.failed > 0) items.push(['Failed', formatNumber(totals.failed)]);
-
-  return (
-    <ul className="figures" aria-label="Totals">
-      {items.map(([label, value]) => (
-        <li key={label}>
-          <span className="figure-label">{label}</span>
-          <span className="figure-value">{value}</span>
-        </li>
-      ))}
-    </ul>
-  );
-}
 
 export function DashboardPage() {
   const [days, setDays] = useState(30);
