@@ -13,7 +13,7 @@ public class SegmentsApiTests(MemberPulseApiFactory factory) : IClassFixture<Mem
         Converters = { new JsonStringEnumConverter() },
     };
 
-    private readonly HttpClient _client = factory.CreateClient();
+    private readonly HttpClient _client = factory.CreateAuthenticatedClient();
 
     private async Task<Guid> NewMemberWithSavingsAsync(decimal deposit)
     {

@@ -13,7 +13,7 @@ public class TransactionsApiTests(MemberPulseApiFactory factory) : IClassFixture
         Converters = { new JsonStringEnumConverter() },
     };
 
-    private readonly HttpClient _client = factory.CreateClient();
+    private readonly HttpClient _client = factory.CreateAuthenticatedClient();
 
     private async Task<(Guid MemberId, AccountDto Account)> NewAccountAsync(string type, decimal deposit)
     {

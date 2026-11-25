@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using MemberPulse.Api.Auth;
 using MemberPulse.Infrastructure;
 using MemberPulse.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -14,6 +15,7 @@ builder.Services
     .AddControllers()
     .AddJsonOptions(o => o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
+builder.Services.AddJwtAuth();
 builder.Services.AddProblemDetails();
 builder.Services.AddOpenApi();
 builder.Services.AddHealthChecks().AddDbContextCheck<MemberPulseDbContext>();
@@ -23,7 +25,7 @@ var app = builder.Build();
 // 2. Startup tasks (Development only)
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.MapOpenApi().AllowAnonymous();
 
     await using var scope = app.Services.CreateAsyncScope();
     var db = scope.ServiceProvider.GetRequiredService<MemberPulseDbContext>();
@@ -31,12 +33,18 @@ if (app.Environment.IsDevelopment())
     await DevDataSeeder.SeedAsync(db);
 }
 
+// Creates the first admin if Seed:AdminEmail/AdminPassword are configured and no staff exist yet.
+await app.Services.BootstrapAdminAsync();
+
 // 3. HTTP pipeline (middleware, runs in this order)
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 
+app.UseAuthentication();
+app.UseAuthorization();
+
 app.MapControllers();
-app.MapHealthChecks("/health");
+app.MapHealthChecks("/health").AllowAnonymous();
 
 app.Run();
 

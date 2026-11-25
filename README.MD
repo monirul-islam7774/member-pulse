@@ -36,7 +36,10 @@ dotnet test
 
 | Endpoint | Description |
 |---|---|
-| `GET /health` | Health check, including the database |
+| `GET /health` | Health check, including the database (public) |
+| `POST /api/auth/login` | Exchange email + password for a JWT (public) |
+| `GET /api/auth/me` | The signed-in staff user |
+| `POST /api/users` | Create a staff user (Admin only) |
 | `GET /api/members?page=1&pageSize=20` | Paged member list |
 | `GET /api/members/{id}` | Member with accounts |
 | `POST /api/members` | Create a member |
@@ -47,6 +50,17 @@ dotnet test
 | `GET/POST /api/segments`, `GET /api/segments/{id}` | List, create and read segments |
 | `GET /api/segments/{id}/members` | Members currently matching a segment |
 | `GET /api/members/{id}/segments` | Segments a member currently belongs to |
+
+### Authentication
+
+Every endpoint except `/health` and `/api/auth/login` requires `Authorization: Bearer <token>`.
+Staff users have the role `Staff` or `Admin`; only admins can create users.
+
+- **Signing key:** set `Jwt:Key` (32+ chars) via user-secrets or the `Jwt__Key` environment variable.
+  Development uses a throwaway key from `appsettings.Development.json`; the app refuses to start without one.
+- **First admin:** if `Seed:AdminEmail` and `Seed:AdminPassword` are set and no staff exist, that admin
+  is created at startup. Development seeds `admin@memberpulse.local` / `Admin_Dev123!`.
+- Passwords are hashed with ASP.NET Core's `PasswordHasher`. There is no lockout or rate limiting yet.
 
 ### Segments
 
@@ -60,7 +74,7 @@ with `accountType`; `Spend30d`/`TransactionCount30d` with `merchantCategory`.
 - [x] Domain model, EF Core persistence, Members API, tests, CI
 - [x] Transactions endpoint
 - [x] Rule-based member segmentation
-- [ ] JWT authentication
+- [x] JWT authentication
 - [ ] Kafka event publishing
 - [ ] Trigger engine (BackgroundService) and campaigns
 - [ ] Conversion tracking and KPI reporting

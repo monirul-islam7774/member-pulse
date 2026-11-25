@@ -1,6 +1,7 @@
 using MemberPulse.Domain.Accounts;
 using MemberPulse.Domain.Members;
 using MemberPulse.Domain.Segmentation;
+using MemberPulse.Domain.Staff;
 using Microsoft.EntityFrameworkCore;
 
 namespace MemberPulse.Infrastructure.Persistence;
@@ -11,6 +12,7 @@ public sealed class MemberPulseDbContext(DbContextOptions<MemberPulseDbContext> 
     public DbSet<Account> Accounts => Set<Account>();
     public DbSet<Transaction> Transactions => Set<Transaction>();
     public DbSet<Segment> Segments => Set<Segment>();
+    public DbSet<StaffUser> StaffUsers => Set<StaffUser>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

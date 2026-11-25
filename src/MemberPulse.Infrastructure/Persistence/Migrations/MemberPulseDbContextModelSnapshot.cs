@@ -141,6 +141,37 @@ namespace MemberPulse.Infrastructure.Persistence.Migrations
                     b.ToTable("Segments", (string)null);
                 });
 
+            modelBuilder.Entity("MemberPulse.Domain.Staff.StaffUser", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Email")
+                        .IsUnique();
+
+                    b.ToTable("StaffUsers", (string)null);
+                });
+
             modelBuilder.Entity("MemberPulse.Domain.Accounts.Account", b =>
                 {
                     b.HasOne("MemberPulse.Domain.Members.Member", null)

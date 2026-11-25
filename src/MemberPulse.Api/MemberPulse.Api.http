@@ -3,12 +3,26 @@
 GET {{baseUrl}}/health
 
 ###
+# @name login
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@memberpulse.local",
+  "password": "Admin_Dev123!"
+}
+
+###
+@token = {{login.response.body.$.accessToken}}
+
 GET {{baseUrl}}/api/members?page=1&pageSize=20
+Authorization: Bearer {{token}}
 
 ###
 # @name create
 POST {{baseUrl}}/api/members
 Content-Type: application/json
+Authorization: Bearer {{token}}
 
 {
   "firstName": "Aisha",
@@ -20,6 +34,7 @@ Content-Type: application/json
 ###
 POST {{baseUrl}}/api/members/{{create.response.body.$.id}}/accounts
 Content-Type: application/json
+Authorization: Bearer {{token}}
 
 {
   "type": "Savings",

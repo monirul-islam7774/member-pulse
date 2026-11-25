@@ -14,7 +14,7 @@ public class MembersApiTests(MemberPulseApiFactory factory) : IClassFixture<Memb
         Converters = { new JsonStringEnumConverter() },
     };
 
-    private readonly HttpClient _client = factory.CreateClient();
+    private readonly HttpClient _client = factory.CreateAuthenticatedClient();
 
     private static string UniqueEmail() => $"member-{Guid.NewGuid():N}@example.com";
 
